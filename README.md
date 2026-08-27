@@ -3,7 +3,6 @@
 **Enterprise Bug & Defect Lifecycle Management Platform Reconstructed from Bugzilla.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Track](https://img.shields.io/badge/Track%202-Bugzilla%20Reconstructed-8b5cf6.svg)]()
 [![Tests](https://img.shields.io/badge/tests-28%20passing-16a34a.svg)]()
 [![Typecheck](https://img.shields.io/badge/tsc-0%20errors-16a34a.svg)]()
 [![Architecture](https://img.shields.io/badge/Stack-React%2018%20%2B%20Express%20REST-0284c7.svg)]()
