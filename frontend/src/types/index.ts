@@ -215,6 +215,20 @@ export interface DuplicateCandidate {
   reason: string;
 }
 
+export interface ParsedStackTrace {
+  detectedLanguage: 'JavaScript' | 'Python' | 'Java' | 'Go' | 'Rust' | 'C/C++ (ASAN)' | 'Generic';
+  errorType: string;
+  errorMessage: string;
+  culpritFile?: string;
+  culpritLine?: number;
+  frames: {
+    functionName: string;
+    filePath: string;
+    lineNumber?: number;
+    isAppCode: boolean;
+  }[];
+}
+
 export interface TriagePrediction {
   suggestedComponentId?: string;
   suggestedComponentName?: string;
@@ -225,4 +239,6 @@ export interface TriagePrediction {
   rootCauseAnalysis: string;
   suggestedFixSummary: string;
   suggestedTestCase: string;
+  parsedStackTrace?: ParsedStackTrace;
 }
+

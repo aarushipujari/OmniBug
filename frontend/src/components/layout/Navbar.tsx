@@ -29,6 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
     setIsCreateModalOpen,
     setIsCommandPaletteOpen,
     notifications,
+    toast,
   } = useApp();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -236,6 +237,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
                     onClick={() => {
                       setCurrentUser(u);
                       setIsUserMenuOpen(false);
+                      toast('Active Persona Switched', `Now simulating ${u.name} (${u.role})`, 'info');
                     }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center gap-3 transition-colors duration-150 ${
                       currentUser.id === u.id

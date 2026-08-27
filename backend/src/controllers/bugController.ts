@@ -4,6 +4,7 @@ import { Bug, FieldChange, Comment, WorkLog, Attachment } from '../types/index.j
 import { StateMachineService } from '../services/stateMachine.js';
 import { DependencyGraphService } from '../services/dependencyGraph.js';
 import { BugzillaExportImportService } from '../services/bugzillaExportImport.js';
+import { SlashCommandService } from '../services/slashCommands.js';
 
 export class BugController {
   public static getBugs(req: Request, res: Response) {
@@ -350,6 +351,9 @@ export class BugController {
         return res.status(400).json({ error: 'Comment text cannot be empty' });
       }
 
+      // Execute any embedded slash commands (/resolve, /assign, /priority, /flag, /log, etc.)
+      const commandExecResult = SlashCommandService.execute(bug.id, text, user);
+
       const newComment: Comment = {
         id: `c-${Date.now()}`,
         authorId: user.id,
@@ -360,18 +364,23 @@ export class BugController {
         isInternal: Boolean(isInternal),
       };
 
-      bug.comments.push(newComment);
-      store.updateBug(bug.id, { comments: bug.comments });
+      const updatedBug = store.getBugById(bug.id) || bug;
+      updatedBug.comments.push(newComment);
+      store.updateBug(updatedBug.id, { comments: updatedBug.comments });
 
       store.addAuditLog({
-        bugId: bug.id,
+        bugId: updatedBug.id,
         actorId: user.id,
         actorName: user.name,
-        changes: [{ field: 'comment', oldValue: null, newValue: `Added comment #${bug.comments.length}` }],
+        changes: [{ field: 'comment', oldValue: null, newValue: `Added comment #${updatedBug.comments.length}` }],
         commentId: newComment.id,
       });
 
-      return res.status(201).json({ data: newComment, bug });
+      return res.status(201).json({
+        data: newComment,
+        bug: store.getBugById(updatedBug.id),
+        executedCommands: commandExecResult.executedCommands
+      });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }

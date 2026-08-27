@@ -51,14 +51,22 @@ export const CreateBugModal: React.FC = () => {
   const selectedProduct = products.find(p => p.id === productId) || products[0];
 
   useEffect(() => {
+    if (products.length > 0) {
+      if (!productId || !products.some(p => p.id === productId)) {
+        setProductId(activeProductId || products[0].id);
+      }
+    }
+  }, [products, activeProductId, productId]);
+
+  useEffect(() => {
     if (selectedProduct) {
-      if (!componentId && selectedProduct.components.length > 0) {
+      if (selectedProduct.components.length > 0 && (!componentId || !selectedProduct.components.some(c => c.id === componentId))) {
         setComponentId(selectedProduct.components[0].id);
       }
-      if (!version && selectedProduct.versions.length > 0) {
+      if (selectedProduct.versions.length > 0 && (!version || !selectedProduct.versions.includes(version))) {
         setVersion(selectedProduct.versions[0]);
       }
-      if (!targetMilestone && selectedProduct.milestones.length > 0) {
+      if (selectedProduct.milestones.length > 0 && (!targetMilestone || !selectedProduct.milestones.some(m => m.name === targetMilestone))) {
         setTargetMilestone(selectedProduct.milestones[0].name);
       }
     }

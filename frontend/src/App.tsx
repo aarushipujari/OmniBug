@@ -13,11 +13,12 @@ import { AnalyticsView } from './components/views/AnalyticsView.js';
 import { BugDetailModal } from './components/bug-detail/BugDetailModal.js';
 import { CreateBugModal } from './components/bug-create/CreateBugModal.js';
 import { ImportExportModal } from './components/common/ImportExportModal.js';
+import { ArchitectureModal } from './components/common/ArchitectureModal.js';
 
 export const App: React.FC = () => {
-  const { activeView, isLoadingBugs } = useApp();
+  const { activeView, isLoadingBugs, setIsImportExportOpen } = useApp();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
+  const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -46,7 +47,10 @@ export const App: React.FC = () => {
       {/* Main Workspace Layout */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Left Navigation Sidebar */}
-        <Sidebar onOpenImportExport={() => setIsImportExportOpen(true)} />
+        <Sidebar
+          onOpenImportExport={() => setIsImportExportOpen(true)}
+          onOpenArchitecture={() => setIsArchitectureOpen(true)}
+        />
 
         {/* Active View Container */}
         <main className="flex-1 flex min-w-0 bg-slate-950 overflow-hidden relative">
@@ -69,6 +73,10 @@ export const App: React.FC = () => {
         onClose={() => setIsNotificationsOpen(false)}
       />
       <ImportExportModal />
+      <ArchitectureModal
+        isOpen={isArchitectureOpen}
+        onClose={() => setIsArchitectureOpen(false)}
+      />
     </div>
   );
 };

@@ -53,6 +53,75 @@ export const TriageView: React.FC = () => {
     }
   };
 
+  const handleInvestigateBug = async () => {
+    if (!activeBug) return;
+    try {
+      await api.updateBug(activeBug.id, { status: 'IN_PROGRESS', assigneeId: currentUser.id, assigneeName: currentUser.name }, currentUser);
+      toast('Under Investigation', `Assigned #${activeBug.bugNumber} to you in IN_PROGRESS`, 'success');
+      await refreshData();
+    } catch (err: any) {
+      toast('Error', err.message, 'alert');
+    }
+  };
+
+  const handleQuickResolve = async () => {
+    if (!activeBug) return;
+    try {
+      await api.updateBug(activeBug.id, { status: 'RESOLVED', resolution: 'FIXED' }, currentUser);
+      toast('Resolved Fixed', `Resolved #${activeBug.bugNumber} as FIXED`, 'success');
+      await refreshData();
+    } catch (err: any) {
+      toast('Error', err.message, 'alert');
+    }
+  };
+
+  const handleSetPriority = async (pri: 'P1' | 'P2' | 'P3' | 'P4' | 'P5') => {
+    if (!activeBug) return;
+    try {
+      await api.updateBug(activeBug.id, { priority: pri }, currentUser);
+      toast('Priority Updated', `Set #${activeBug.bugNumber} to ${pri}`, 'success');
+      await refreshData();
+    } catch (err: any) {
+      toast('Error', err.message, 'alert');
+    }
+  };
+
+  // Keyboard navigation & triage hotkeys (J/K/C/I/E/1-5)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = (document.activeElement?.tagName || '').toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea') return;
+
+      const currentIndex = triageBugs.findIndex(b => b.id === (activeBug?.id || ''));
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        if (currentIndex < triageBugs.length - 1) {
+          e.preventDefault();
+          setActiveBugId(triageBugs[currentIndex + 1].id);
+        }
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        if (currentIndex > 0) {
+          e.preventDefault();
+          setActiveBugId(triageBugs[currentIndex - 1].id);
+        }
+      } else if (e.key === 'c' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        handleConfirmBug();
+      } else if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        handleInvestigateBug();
+      } else if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        handleQuickResolve();
+      } else if (['1', '2', '3', '4', '5'].includes(e.key)) {
+        e.preventDefault();
+        handleSetPriority(`P${e.key}` as any);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [triageBugs, activeBug]);
+
   const handleApplyAIPrediction = async () => {
     if (!activeBug || !aiPrediction) return;
     try {
@@ -283,6 +352,29 @@ export const TriageView: React.FC = () => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Multi-Language Stack Trace Inspector */}
+                  {aiPrediction.parsedStackTrace && (
+                    <div className="p-3.5 bg-slate-900 rounded-xl border border-cyan-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5 font-mono">
+                          ⚡ Parsed {aiPrediction.parsedStackTrace.detectedLanguage} Traceback
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 font-mono border border-cyan-500/30">
+                          {aiPrediction.parsedStackTrace.errorType}
+                        </span>
+                      </div>
+                      <div className="text-xs font-mono text-slate-300 bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <div className="text-rose-400 font-bold mb-1">{aiPrediction.parsedStackTrace.errorMessage}</div>
+                        {aiPrediction.parsedStackTrace.culpritFile && (
+                          <div className="text-[11px] text-slate-400">
+                            Culprit: <span className="text-emerald-400 font-bold">{aiPrediction.parsedStackTrace.culpritFile}</span>
+                            {aiPrediction.parsedStackTrace.culpritLine ? ` (Line ${aiPrediction.parsedStackTrace.culpritLine})` : ''}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="p-3.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1.5">
                     <span className="text-slate-300 text-xs font-semibold block font-sans">Hypothesized Root Cause:</span>

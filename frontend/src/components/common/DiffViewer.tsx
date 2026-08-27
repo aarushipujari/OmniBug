@@ -106,53 +106,133 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
       </div>
 
       {/* Diff Code Container */}
-      <div className="overflow-x-auto max-h-96 divide-y divide-slate-850/50">
-        {parsedLines.map((line, idx) => {
-          if (line.type === 'meta') {
-            return (
-              <div key={idx} className="px-4 py-1 text-slate-400 bg-slate-900/50 italic text-[11px]">
-                {line.content}
-              </div>
-            );
-          }
-          if (line.type === 'header') {
-            return (
-              <div key={idx} className="px-4 py-1.5 text-cyan-400 bg-cyan-950/20 font-semibold border-y border-cyan-900/30">
-                {line.content}
-              </div>
-            );
-          }
+      <div className="overflow-x-auto max-h-96">
+        {viewMode === 'unified' ? (
+          <div className="divide-y divide-slate-850/50">
+            {parsedLines.map((line, idx) => {
+              if (line.type === 'meta') {
+                return (
+                  <div key={idx} className="px-4 py-1 text-slate-400 bg-slate-900/50 italic text-[11px]">
+                    {line.content}
+                  </div>
+                );
+              }
+              if (line.type === 'header') {
+                return (
+                  <div key={idx} className="px-4 py-1.5 text-cyan-400 bg-cyan-950/20 font-semibold border-y border-cyan-900/30">
+                    {line.content}
+                  </div>
+                );
+              }
 
-          const isAdd = line.type === 'add';
-          const isDel = line.type === 'delete';
+              const isAdd = line.type === 'add';
+              const isDel = line.type === 'delete';
 
-          return (
-            <div
-              key={idx}
-              className={`flex items-start hover:brightness-110 transition-colors ${
-                isAdd
-                  ? 'bg-emerald-950/25 text-emerald-300'
-                  : isDel
-                  ? 'bg-rose-950/25 text-rose-300'
-                  : 'text-slate-300 bg-transparent'
-              }`}
-            >
-              {/* Line numbers */}
-              <div className="flex select-none text-[11px] text-slate-500 bg-slate-950/40 border-r border-slate-800 text-right shrink-0">
-                <span className="w-10 px-2 py-0.5">{line.oldLineNumber ?? ''}</span>
-                <span className="w-10 px-2 py-0.5 border-l border-slate-850">{line.newLineNumber ?? ''}</span>
+              return (
+                <div
+                  key={idx}
+                  className={`flex items-start hover:brightness-110 transition-colors ${
+                    isAdd
+                      ? 'bg-emerald-950/25 text-emerald-300'
+                      : isDel
+                      ? 'bg-rose-950/25 text-rose-300'
+                      : 'text-slate-300 bg-transparent'
+                  }`}
+                >
+                  {/* Line numbers */}
+                  <div className="flex select-none text-[11px] text-slate-500 bg-slate-950/40 border-r border-slate-800 text-right shrink-0">
+                    <span className="w-10 px-2 py-0.5">{line.oldLineNumber ?? ''}</span>
+                    <span className="w-10 px-2 py-0.5 border-l border-slate-850">{line.newLineNumber ?? ''}</span>
+                  </div>
+                  {/* Diff marker */}
+                  <div className="w-6 text-center select-none py-0.5 font-bold shrink-0">
+                    {isAdd ? '+' : isDel ? '-' : ' '}
+                  </div>
+                  {/* Content */}
+                  <div className="py-0.5 px-2 whitespace-pre font-mono flex-1 overflow-x-auto">
+                    {line.content}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 divide-x divide-slate-800 text-[11px]">
+            {/* Split View Left: Original / Deletions */}
+            <div className="divide-y divide-slate-850/50">
+              <div className="px-3 py-1.5 bg-slate-950/80 font-bold text-slate-400 border-b border-slate-800 text-[10px] uppercase font-mono">
+                Original (Base)
               </div>
-              {/* Diff marker */}
-              <div className="w-6 text-center select-none py-0.5 font-bold shrink-0">
-                {isAdd ? '+' : isDel ? '-' : ' '}
-              </div>
-              {/* Content */}
-              <div className="py-0.5 px-2 whitespace-pre font-mono flex-1 overflow-x-auto">
-                {line.content}
-              </div>
+              {parsedLines.map((line, idx) => {
+                if (line.type === 'meta' || line.type === 'header') {
+                  return (
+                    <div key={`left-${idx}`} className="px-3 py-1 text-slate-500 bg-slate-950/30 truncate">
+                      {line.content}
+                    </div>
+                  );
+                }
+                if (line.type === 'add') {
+                  return (
+                    <div key={`left-${idx}`} className="flex items-center bg-slate-950/20 text-slate-600 py-0.5">
+                      <span className="w-9 px-2 text-right text-slate-700 select-none"> </span>
+                      <span className="px-2 select-none"> </span>
+                    </div>
+                  );
+                }
+                const isDel = line.type === 'delete';
+                return (
+                  <div
+                    key={`left-${idx}`}
+                    className={`flex items-start ${isDel ? 'bg-rose-950/30 text-rose-300' : 'text-slate-300'}`}
+                  >
+                    <span className="w-9 px-2 py-0.5 text-right text-slate-500 select-none border-r border-slate-800 shrink-0">
+                      {line.oldLineNumber ?? ''}
+                    </span>
+                    <span className="w-4 text-center py-0.5 select-none font-bold shrink-0">{isDel ? '-' : ' '}</span>
+                    <span className="py-0.5 px-2 whitespace-pre overflow-x-auto flex-1">{line.content}</span>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+
+            {/* Split View Right: Modified / Additions */}
+            <div className="divide-y divide-slate-850/50">
+              <div className="px-3 py-1.5 bg-slate-950/80 font-bold text-emerald-400 border-b border-slate-800 text-[10px] uppercase font-mono">
+                Proposed Patch
+              </div>
+              {parsedLines.map((line, idx) => {
+                if (line.type === 'meta' || line.type === 'header') {
+                  return (
+                    <div key={`right-${idx}`} className="px-3 py-1 text-slate-500 bg-slate-950/30 truncate">
+                      {line.content}
+                    </div>
+                  );
+                }
+                if (line.type === 'delete') {
+                  return (
+                    <div key={`right-${idx}`} className="flex items-center bg-slate-950/20 text-slate-600 py-0.5">
+                      <span className="w-9 px-2 text-right text-slate-700 select-none"> </span>
+                      <span className="px-2 select-none"> </span>
+                    </div>
+                  );
+                }
+                const isAdd = line.type === 'add';
+                return (
+                  <div
+                    key={`right-${idx}`}
+                    className={`flex items-start ${isAdd ? 'bg-emerald-950/30 text-emerald-300' : 'text-slate-300'}`}
+                  >
+                    <span className="w-9 px-2 py-0.5 text-right text-slate-500 select-none border-r border-slate-800 shrink-0">
+                      {line.newLineNumber ?? ''}
+                    </span>
+                    <span className="w-4 text-center py-0.5 select-none font-bold shrink-0">{isAdd ? '+' : ' '}</span>
+                    <span className="py-0.5 px-2 whitespace-pre overflow-x-auto flex-1">{line.content}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

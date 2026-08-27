@@ -15,14 +15,16 @@ import {
   RotateCcw,
   Sparkles,
   Layers,
+  Cpu,
 } from 'lucide-react';
 import { api } from '../../services/api.js';
 
 interface SidebarProps {
   onOpenImportExport: () => void;
+  onOpenArchitecture?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArchitecture }) => {
   const {
     activeView,
     setActiveView,
@@ -45,7 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport }) => {
   const navViews: { id: AppView; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'table', label: 'All Issues (Grid)', icon: <Table2 className="w-4 h-4 shrink-0" /> },
     { id: 'kanban', label: 'Kanban Board', icon: <Kanban className="w-4 h-4 shrink-0" /> },
-    { id: 'graph', label: 'Blocker Topology', icon: <GitGraph className="w-4 h-4 shrink-0" /> },
+    { id: 'graph', label: 'Dependency Graph (DAG)', icon: <GitGraph className="w-4 h-4 shrink-0 text-purple-400" /> },
     {
       id: 'triage',
       label: 'Speed Triage',
@@ -155,6 +157,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport }) => {
 
       {/* Footer Utilities with Subtle Divider */}
       <div className="pt-3 border-t border-slate-800/80 space-y-1.5">
+        {onOpenArchitecture && (
+          <button
+            onClick={onOpenArchitecture}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-emerald-300 hover:text-white bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 transition-all duration-150 active:scale-[0.98] font-medium"
+          >
+            <Cpu className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>Architecture & Viva Guide</span>
+          </button>
+        )}
+
         <button
           onClick={onOpenImportExport}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-850 border border-slate-800/80 hover:border-slate-700 transition-all duration-150 active:scale-[0.98]"

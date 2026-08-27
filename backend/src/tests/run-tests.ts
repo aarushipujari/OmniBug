@@ -3,6 +3,7 @@ import { StateMachineService } from '../services/stateMachine.js';
 import { DependencyGraphService } from '../services/dependencyGraph.js';
 import { AITriageService } from '../services/aiTriage.js';
 import { BugzillaExportImportService } from '../services/bugzillaExportImport.js';
+import { SlashCommandService } from '../services/slashCommands.js';
 import { Bug } from '../types/index.js';
 
 let passed = 0;
@@ -90,8 +91,29 @@ async function runAllTests() {
   assert(classification.isSecuritySensitive === true, 'AI detects security relevance');
   assert(classification.suggestedTestCase.includes('describe'), 'AI generates automated test case template');
 
-  // Test Group 5: Bugzilla XML Export & Import
-  console.log('\n📄 5. Bugzilla XML Interoperability Tests');
+  // Test Group 5: Multi-Language Stack Trace Parser & Slash Commands
+  console.log('\n⚡ 5. Multi-Language Stack Trace Parser & Slash Command Tests');
+  const pyTrace = `Traceback (most recent call last):
+  File "src/compiler/optimizer.py", line 184, in optimize_ast
+    raise IndexError("Buffer overflow in AST walker")
+IndexError: Buffer overflow in AST walker`;
+  const parsedPy = AITriageService.parseStackTrace(pyTrace);
+  assert(parsedPy?.detectedLanguage === 'Python', 'Parser detects Python language traceback');
+  assert(parsedPy?.culpritFile === 'src/compiler/optimizer.py', 'Parser extracts culprit file path');
+  assert(parsedPy?.culpritLine === 184, 'Parser extracts culprit line number');
+
+  const pyClassification = AITriageService.analyzeAndClassify('IndexError crash in AST optimizer', pyTrace, products, 'prod-1');
+  assert(pyClassification.suggestedComponentName === 'JavaScript & WASM JIT', 'Correctly routes optimizer/compiler bug to JIT/Compiler component');
+
+  // Test Slash Command Engine
+  const sampleUser = users[0];
+  const slashResult = SlashCommandService.execute('bug-1002', '/priority P1\n/log 3h Tested allocator fix\nGreat progress team.', sampleUser);
+  assert(slashResult.executedCommands.length === 2, 'Slash command engine executes multiple commands in single comment');
+  const updatedBug1002 = store.getBugById('bug-1002');
+  assert(updatedBug1002?.priority === 'P1', 'Slash command updated priority to P1');
+
+  // Test Group 6: Bugzilla XML Export & Import
+  console.log('\n📄 6. Bugzilla XML Interoperability Tests');
   const xml = BugzillaExportImportService.exportToBugzillaXml(bugs);
   assert(xml.includes('<bugzilla') && xml.includes('</bugzilla>'), 'Exports valid Bugzilla XML root container');
   assert(xml.includes('<bug_id>1001</bug_id>'), 'Exports bug ID and metadata in XML');
