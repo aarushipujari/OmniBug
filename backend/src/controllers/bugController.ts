@@ -281,12 +281,29 @@ export class BugController {
         }
       }
 
+      // Auto-resolve componentName if componentId changed
+      if (updates.componentId && !updates.componentName) {
+        const prod = store.getProductById(currentBug.productId);
+        const comp = prod?.components.find(c => c.id === updates.componentId);
+        if (comp) {
+          updates.componentName = comp.name;
+        }
+      }
+
+      // Auto-resolve assigneeName if assigneeId changed
+      if (updates.assigneeId && !updates.assigneeName) {
+        const assigneeUser = store.getUserById(updates.assigneeId);
+        if (assigneeUser) {
+          updates.assigneeName = assigneeUser.name;
+        }
+      }
+
       // Track changed fields for audit log
       const changes: FieldChange[] = [];
       const trackFields: (keyof Bug)[] = [
-        'status', 'resolution', 'severity', 'priority', 'assigneeId', 'targetMilestone',
-        'componentId', 'version', 'isSecuritySensitive', 'estimatedHours', 'remainingHours',
-        'duplicateOfBugId'
+        'status', 'resolution', 'severity', 'priority', 'assigneeId', 'assigneeName',
+        'targetMilestone', 'componentId', 'componentName', 'version', 'isSecuritySensitive',
+        'estimatedHours', 'remainingHours', 'duplicateOfBugId', 'tags'
       ];
 
       for (const field of trackFields) {

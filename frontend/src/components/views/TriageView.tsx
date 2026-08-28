@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext.js';
-import { DuplicateCandidate, TriagePrediction } from '../../types/index.js';
+import { Bug, DuplicateCandidate, TriagePrediction } from '../../types/index.js';
 import { api } from '../../services/api.js';
 import {
   Inbox,
   Sparkles,
   CheckCircle,
+  CheckCircle2,
   HelpCircle,
   ArrowRight,
   RefreshCw,
   CheckCheck,
+  Tag,
 } from 'lucide-react';
 import { SeverityBadge } from '../common/SeverityBadge.js';
 import { StatusBadge } from '../common/StatusBadge.js';
@@ -19,13 +21,27 @@ export const TriageView: React.FC = () => {
   const { bugs, currentUser, refreshData, toast, setSelectedBugId, setIsCreateModalOpen } = useApp();
   const triageBugs = bugs.filter(b => b.status === 'UNCONFIRMED' || b.flags.some(f => f.name === 'needinfo'));
 
-  const [activeBugId, setActiveBugId] = useState<string | null>(triageBugs[0]?.id || null);
+  const [activeBugId, setActiveBugId] = useState<string | null>(null);
   const [duplicateCandidates, setDuplicateCandidates] = useState<DuplicateCandidate[]>([]);
   const [aiPrediction, setAiPrediction] = useState<TriagePrediction | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isApplyingAI, setIsApplyingAI] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
-  const activeBug = bugs.find(b => b.id === activeBugId) || triageBugs[0];
+  // Sync activeBugId whenever triageBugs updates or on initial load
+  useEffect(() => {
+    if (triageBugs.length > 0) {
+      if (!activeBugId || !bugs.some(b => b.id === activeBugId)) {
+        setActiveBugId(triageBugs[0].id);
+      }
+    } else {
+      setActiveBugId(null);
+    }
+  }, [triageBugs, activeBugId, bugs]);
 
+  const activeBug = bugs.find(b => b.id === activeBugId) || triageBugs[0] || null;
+
+  // Run duplicate check & AI classification whenever active bug changes
   useEffect(() => {
     if (activeBug) {
       setIsAnalyzing(true);
@@ -37,27 +53,39 @@ export const TriageView: React.FC = () => {
           setDuplicateCandidates(dups.filter(d => d.bugId !== activeBug.id));
           setAiPrediction(pred);
         })
-        .catch(console.error)
+        .catch(err => {
+          console.error('Triage analysis error:', err);
+        })
         .finally(() => setIsAnalyzing(false));
+    } else {
+      setDuplicateCandidates([]);
+      setAiPrediction(null);
     }
-  }, [activeBugId]);
+  }, [activeBug?.id, activeBug?.productId, activeBug?.title, activeBug?.description]);
 
   const handleConfirmBug = async () => {
     if (!activeBug) return;
+    setIsConfirming(true);
     try {
-      await api.updateBug(activeBug.id, { status: 'NEW' }, currentUser);
-      toast('Bug Confirmed', `Marked #${activeBug.bugNumber} as CONFIRMED (NEW)`, 'success');
+      const updated = await api.updateBug(activeBug.id, { status: 'NEW' }, currentUser);
+      toast('Bug Confirmed', `Marked #${updated.bugNumber} as CONFIRMED (NEW)`, 'success');
       await refreshData();
     } catch (err: any) {
-      toast('Error', err.message, 'alert');
+      toast('Error Confirming Bug', err.message, 'alert');
+    } finally {
+      setIsConfirming(false);
     }
   };
 
   const handleInvestigateBug = async () => {
     if (!activeBug) return;
     try {
-      await api.updateBug(activeBug.id, { status: 'IN_PROGRESS', assigneeId: currentUser.id, assigneeName: currentUser.name }, currentUser);
-      toast('Under Investigation', `Assigned #${activeBug.bugNumber} to you in IN_PROGRESS`, 'success');
+      const updated = await api.updateBug(
+        activeBug.id,
+        { status: 'IN_PROGRESS', assigneeId: currentUser.id, assigneeName: currentUser.name },
+        currentUser
+      );
+      toast('Under Investigation', `Assigned #${updated.bugNumber} to you in IN_PROGRESS`, 'success');
       await refreshData();
     } catch (err: any) {
       toast('Error', err.message, 'alert');
@@ -67,8 +95,8 @@ export const TriageView: React.FC = () => {
   const handleQuickResolve = async () => {
     if (!activeBug) return;
     try {
-      await api.updateBug(activeBug.id, { status: 'RESOLVED', resolution: 'FIXED' }, currentUser);
-      toast('Resolved Fixed', `Resolved #${activeBug.bugNumber} as FIXED`, 'success');
+      const updated = await api.updateBug(activeBug.id, { status: 'RESOLVED', resolution: 'FIXED' }, currentUser);
+      toast('Resolved Fixed', `Resolved #${updated.bugNumber} as FIXED`, 'success');
       await refreshData();
     } catch (err: any) {
       toast('Error', err.message, 'alert');
@@ -78,8 +106,8 @@ export const TriageView: React.FC = () => {
   const handleSetPriority = async (pri: 'P1' | 'P2' | 'P3' | 'P4' | 'P5') => {
     if (!activeBug) return;
     try {
-      await api.updateBug(activeBug.id, { priority: pri }, currentUser);
-      toast('Priority Updated', `Set #${activeBug.bugNumber} to ${pri}`, 'success');
+      const updated = await api.updateBug(activeBug.id, { priority: pri }, currentUser);
+      toast('Priority Updated', `Set #${updated.bugNumber} to ${pri}`, 'success');
       await refreshData();
     } catch (err: any) {
       toast('Error', err.message, 'alert');
@@ -105,7 +133,9 @@ export const TriageView: React.FC = () => {
         }
       } else if (e.key === 'c' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
-        handleConfirmBug();
+        if (activeBug?.status === 'UNCONFIRMED') {
+          handleConfirmBug();
+        }
       } else if (e.key === 'i' || e.key === 'I') {
         e.preventDefault();
         handleInvestigateBug();
@@ -124,28 +154,43 @@ export const TriageView: React.FC = () => {
 
   const handleApplyAIPrediction = async () => {
     if (!activeBug || !aiPrediction) return;
+    setIsApplyingAI(true);
     try {
-      await api.updateBug(
-        activeBug.id,
-        {
-          severity: aiPrediction.suggestedSeverity,
-          priority: aiPrediction.suggestedPriority,
-          isSecuritySensitive: aiPrediction.isSecuritySensitive,
-          tags: Array.from(new Set([...activeBug.tags, ...aiPrediction.suggestedTags])),
-        },
-        currentUser
+      const updates: Partial<Bug> = {
+        severity: aiPrediction.suggestedSeverity,
+        priority: aiPrediction.suggestedPriority,
+        isSecuritySensitive: aiPrediction.isSecuritySensitive,
+      };
+
+      if (aiPrediction.suggestedComponentId) {
+        updates.componentId = aiPrediction.suggestedComponentId;
+        if (aiPrediction.suggestedComponentName) {
+          updates.componentName = aiPrediction.suggestedComponentName;
+        }
+      }
+
+      if (aiPrediction.suggestedTags && aiPrediction.suggestedTags.length > 0) {
+        updates.tags = Array.from(new Set([...activeBug.tags, ...aiPrediction.suggestedTags]));
+      }
+
+      const updated = await api.updateBug(activeBug.id, updates, currentUser);
+      toast(
+        'AI Classification Applied',
+        `Updated #${updated.bugNumber}: ${updated.severity.toUpperCase()} (${updated.priority}) • ${updated.componentName}`,
+        'success'
       );
-      toast('AI Classification Applied', `Updated severity to ${aiPrediction.suggestedSeverity}`, 'success');
       await refreshData();
     } catch (err: any) {
-      toast('Error', err.message, 'alert');
+      toast('Failed to Apply Classification', err.message, 'alert');
+    } finally {
+      setIsApplyingAI(false);
     }
   };
 
   const handleMarkDuplicate = async (targetBugId: string) => {
     if (!activeBug) return;
     try {
-      await api.updateBug(
+      const updated = await api.updateBug(
         activeBug.id,
         {
           status: 'RESOLVED',
@@ -154,7 +199,7 @@ export const TriageView: React.FC = () => {
         },
         currentUser
       );
-      toast('Marked Duplicate', `Resolved #${activeBug.bugNumber} as duplicate of ${targetBugId}`, 'success');
+      toast('Marked Duplicate', `Resolved #${updated.bugNumber} as duplicate of ${targetBugId}`, 'success');
       await refreshData();
     } catch (err: any) {
       toast('Error', err.message, 'alert');
@@ -232,21 +277,46 @@ export const TriageView: React.FC = () => {
       {activeBug ? (
         <div className="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
           {/* Top Triage Action Bar */}
-          <div className="p-4 rounded-2xl border border-slate-800 bg-slate-900/90 flex items-center justify-between shadow-lg">
-            <div className="flex items-center gap-3">
+          <div className="p-4 rounded-2xl border border-slate-800 bg-slate-900/90 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span className="font-mono text-sm font-bold text-emerald-400">
                 Triage Issue #{activeBug.bugNumber}
               </span>
+              <StatusBadge status={activeBug.status} />
               <SeverityBadge severity={activeBug.severity} priority={activeBug.priority} />
+              {activeBug.componentName && (
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                  {activeBug.componentName}
+                </span>
+              )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleConfirmBug}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98]"
-              >
-                <CheckCircle className="w-3.5 h-3.5" /> Confirm as Bug
-              </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {activeBug.status === 'UNCONFIRMED' ? (
+                <button
+                  onClick={handleConfirmBug}
+                  disabled={isConfirming}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98]"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" /> {isConfirming ? 'Confirming...' : 'Confirm as Bug (NEW)'}
+                </button>
+              ) : activeBug.status === 'NEW' ? (
+                <>
+                  <div className="flex items-center gap-1 text-xs font-mono text-emerald-400 px-2.5 py-1 bg-emerald-950/40 rounded-lg border border-emerald-500/30">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Confirmed (NEW)
+                  </div>
+                  <button
+                    onClick={handleInvestigateBug}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98]"
+                  >
+                    <ArrowRight className="w-3.5 h-3.5" /> Start Investigation
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-1 text-xs font-mono text-emerald-400 px-2.5 py-1 bg-emerald-950/40 rounded-lg border border-emerald-500/30">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Active ({activeBug.status})
+                </div>
+              )}
               <button
                 onClick={handleRequestNeedInfo}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-medium transition-all duration-150 active:scale-[0.98]"
@@ -332,17 +402,25 @@ export const TriageView: React.FC = () => {
                     </div>
                     <button
                       onClick={handleApplyAIPrediction}
-                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98]"
+                      disabled={isApplyingAI}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98]"
                     >
-                      Apply AI Classification
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {isApplyingAI ? 'Applying...' : 'Apply AI Classification'}
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
                     <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
                       <span className="text-slate-500 text-[10px] block uppercase">Predicted Severity</span>
                       <span className="font-bold text-emerald-400 capitalize">
                         {aiPrediction.suggestedSeverity} ({aiPrediction.suggestedPriority})
+                      </span>
+                    </div>
+                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 text-[10px] block uppercase">Suggested Component</span>
+                      <span className="font-bold text-sky-400 truncate block">
+                        {aiPrediction.suggestedComponentName || 'Default'}
                       </span>
                     </div>
                     <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
@@ -352,6 +430,23 @@ export const TriageView: React.FC = () => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Suggested Tags */}
+                  {aiPrediction.suggestedTags && aiPrediction.suggestedTags.length > 0 && (
+                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1.5">
+                      <span className="text-slate-500 text-[10px] uppercase font-mono block">Suggested Tags</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {aiPrediction.suggestedTags.map(tag => (
+                          <span
+                            key={tag}
+                            className="px-2 py-0.5 rounded-md bg-slate-800 text-emerald-300 border border-slate-700 text-[11px] font-mono"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Multi-Language Stack Trace Inspector */}
                   {aiPrediction.parsedStackTrace && (
