@@ -3,7 +3,7 @@
 **Enterprise Bug & Defect Lifecycle Management Platform Reconstructed from Bugzilla.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-28%20passing-16a34a.svg)]()
+[![Tests](https://img.shields.io/badge/tests-35%20passing-16a34a.svg)]()
 [![Typecheck](https://img.shields.io/badge/tsc-0%20errors-16a34a.svg)]()
 [![Architecture](https://img.shields.io/badge/Stack-React%2018%20%2B%20Express%20REST-0284c7.svg)]()
 
@@ -272,8 +272,18 @@ npm test
   ✅ PASS: Imports matching count of bugs from XML
   ✅ PASS: Imported bug title matches original
 
+🎯 7. Speed Triage & Classification Tests (#1006)
+  ✅ PASS: Bug #1006 starts in UNCONFIRMED status
+  ✅ PASS: AI generates suggested component ID for bug #1006
+  ✅ PASS: AI correctly predicts major severity for timeout/exhaustion
+  ✅ PASS: Persisted AI severity to bug-1006
+  ✅ PASS: Persisted AI tags to bug-1006
+  ✅ PASS: Valid transition from UNCONFIRMED to NEW
+  ✅ PASS: Bug #1006 confirmed to NEW status
+  ✅ PASS: Confirmed status persists in store
+
 ========================================
-📊 TEST RESULTS: 28 PASSED, 0 FAILED
+📊 TEST RESULTS: 35 PASSED, 0 FAILED
 ========================================
 ```
 
@@ -296,7 +306,7 @@ omnibug/
 │   │   │   └── stateMachine.ts         # Guarded Bugzilla lifecycle validator
 │   │   ├── types/               # TypeScript domain models and schemas
 │   │   ├── server.ts            # Express server initialization (Port 4000)
-│   │   └── tests/               # Automated test runner (28/28 passing unit & integration tests)
+│   │   └── tests/               # Automated test runner (35/35 passing unit & integration tests)
 │   ├── data-storage/            # Atomic JSON disk persistence store
 │   ├── package.json
 │   └── tsconfig.json
