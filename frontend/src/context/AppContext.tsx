@@ -191,13 +191,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshData();
   }, [refreshData]);
 
-  // Global hotkeys (Ctrl+K / Cmd+K, C for new bug, Escape to close modals)
+  // Global hotkeys (Ctrl+K / Cmd+K, C for new bug outside Speed Triage, Escape to close modals)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsCommandPaletteOpen(prev => !prev);
-      } else if (e.key === 'c' && !isCreateModalOpen && !isCommandPaletteOpen && !selectedBugId && !isImportExportOpen && !isArchitectureOpen) {
+      } else if (
+        (e.key === 'c' || e.key === 'C') &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        activeView !== 'triage' &&
+        !isCreateModalOpen &&
+        !isCommandPaletteOpen &&
+        !selectedBugId &&
+        !isImportExportOpen &&
+        !isArchitectureOpen
+      ) {
         const activeTag = (document.activeElement?.tagName || '').toLowerCase();
         if (activeTag !== 'input' && activeTag !== 'textarea') {
           e.preventDefault();
@@ -214,7 +225,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCreateModalOpen, isCommandPaletteOpen, selectedBugId, isImportExportOpen, isArchitectureOpen]);
+  }, [activeView, isCreateModalOpen, isCommandPaletteOpen, selectedBugId, isImportExportOpen, isArchitectureOpen]);
 
   const markNotificationRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));

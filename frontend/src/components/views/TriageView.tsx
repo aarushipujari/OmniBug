@@ -14,7 +14,6 @@ import {
   Tag,
   Layers,
   Shield,
-  Clock,
   Play,
 } from 'lucide-react';
 import { SeverityBadge } from '../common/SeverityBadge.js';
@@ -58,19 +57,14 @@ export const TriageView: React.FC = () => {
 
   const handleConfirmBug = async () => {
     if (!activeBug || isUpdatingStatus) return;
+    if (activeBug.status === 'NEW') {
+      toast('Already Confirmed', `#${activeBug.bugNumber} is already confirmed (NEW). Press 'I' to start investigation.`, 'info');
+      return;
+    }
     setIsUpdatingStatus(true);
     try {
-      if (activeBug.status === 'UNCONFIRMED') {
-        await api.updateBug(activeBug.id, { status: 'NEW' }, currentUser);
-        toast('Bug Confirmed', `Marked #${activeBug.bugNumber} as CONFIRMED (NEW)`, 'success');
-      } else if (activeBug.status === 'NEW') {
-        await api.updateBug(
-          activeBug.id,
-          { status: 'IN_PROGRESS', assigneeId: currentUser.id, assigneeName: currentUser.name },
-          currentUser
-        );
-        toast('Started Investigation', `Assigned #${activeBug.bugNumber} to ${currentUser.name.split(' ')[0]} in IN_PROGRESS`, 'success');
-      }
+      await api.updateBug(activeBug.id, { status: 'NEW' }, currentUser);
+      toast('Bug Confirmed', `Marked #${activeBug.bugNumber} as CONFIRMED (NEW)`, 'success');
       await refreshData();
     } catch (err: any) {
       toast('Lifecycle Error', err.message, 'alert');
@@ -81,6 +75,10 @@ export const TriageView: React.FC = () => {
 
   const handleInvestigateBug = async () => {
     if (!activeBug || isUpdatingStatus) return;
+    if (activeBug.status === 'IN_PROGRESS') {
+      toast('Already In Progress', `#${activeBug.bugNumber} is already under active investigation.`, 'info');
+      return;
+    }
     setIsUpdatingStatus(true);
     try {
       await api.updateBug(
@@ -91,7 +89,7 @@ export const TriageView: React.FC = () => {
       toast('Under Investigation', `Assigned #${activeBug.bugNumber} to you in IN_PROGRESS`, 'success');
       await refreshData();
     } catch (err: any) {
-      toast('Error', err.message, 'alert');
+      toast('Lifecycle Error', err.message, 'alert');
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -129,27 +127,33 @@ export const TriageView: React.FC = () => {
       if (activeTag === 'input' || activeTag === 'textarea') return;
 
       const currentIndex = triageBugs.findIndex(b => b.id === (activeBug?.id || ''));
-      if (e.key === 'j' || e.key === 'ArrowDown') {
+      if ((e.key === 'j' || e.key === 'J' || e.key === 'ArrowDown') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         if (currentIndex < triageBugs.length - 1) {
           e.preventDefault();
+          e.stopPropagation();
           setActiveBugId(triageBugs[currentIndex + 1].id);
         }
-      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      } else if ((e.key === 'k' || e.key === 'K' || e.key === 'ArrowUp') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         if (currentIndex > 0) {
           e.preventDefault();
+          e.stopPropagation();
           setActiveBugId(triageBugs[currentIndex - 1].id);
         }
-      } else if (e.key === 'c' && !e.ctrlKey && !e.metaKey) {
+      } else if ((e.key === 'c' || e.key === 'C') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
+        e.stopPropagation();
         handleConfirmBug();
-      } else if (e.key === 'i' || e.key === 'I') {
+      } else if ((e.key === 'i' || e.key === 'I') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
+        e.stopPropagation();
         handleInvestigateBug();
-      } else if (e.key === 'e' || e.key === 'E') {
+      } else if ((e.key === 'e' || e.key === 'E') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
+        e.stopPropagation();
         handleQuickResolve();
-      } else if (['1', '2', '3', '4', '5'].includes(e.key)) {
+      } else if (['1', '2', '3', '4', '5'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
+        e.stopPropagation();
         handleSetPriority(`P${e.key}` as any);
       }
     };
@@ -305,7 +309,7 @@ export const TriageView: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {activeBug.status === 'UNCONFIRMED' ? (
+              {activeBug.status === 'UNCONFIRMED' && (
                 <button
                   onClick={handleConfirmBug}
                   disabled={isUpdatingStatus}
@@ -315,15 +319,17 @@ export const TriageView: React.FC = () => {
                   <CheckCircle className="w-3.5 h-3.5" />
                   <span>{isUpdatingStatus ? 'Confirming...' : 'Confirm as Bug (C)'}</span>
                 </button>
-              ) : (
+              )}
+
+              {activeBug.status !== 'IN_PROGRESS' && activeBug.status !== 'RESOLVED' && activeBug.status !== 'CLOSED' && (
                 <button
                   onClick={handleInvestigateBug}
-                  disabled={isUpdatingStatus || activeBug.status === 'IN_PROGRESS'}
+                  disabled={isUpdatingStatus}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-200 border border-indigo-500/40 rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98]"
                   title="Assign to self and start work (I)"
                 >
                   <Play className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>{activeBug.status === 'IN_PROGRESS' ? 'In Progress ✓' : 'Investigate (I)'}</span>
+                  <span>{isUpdatingStatus ? 'Starting...' : 'Investigate (I)'}</span>
                 </button>
               )}
 
