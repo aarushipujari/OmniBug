@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext.js';
 import { api } from '../../services/api.js';
-import { X, Download, Upload, FileCode, Sparkles, Check } from 'lucide-react';
+import { X, Download, Upload, FileCode, Sparkles, Check, Eye, Copy } from 'lucide-react';
 
 const SAMPLE_BUGZILLA_XML = `<?xml version="1.0" standalone="yes" ?>
 <!DOCTYPE bugzilla SYSTEM "https://bugzilla.mozilla.org/bugzilla.dtd">
@@ -28,13 +28,28 @@ const SAMPLE_BUGZILLA_XML = `<?xml version="1.0" standalone="yes" ?>
 export const ImportExportModal: React.FC = () => {
   const { isImportExportOpen, setIsImportExportOpen, refreshData, toast } = useApp();
   const [xmlText, setXmlText] = useState('');
+  const [exportedXml, setExportedXml] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
   if (!isImportExportOpen) return null;
 
-  const handleExportXml = async () => {
+  const handlePreviewExport = async () => {
+    setIsExporting(true);
     try {
       const xml = await api.exportBugzillaXml();
+      setExportedXml(xml);
+      toast('XML Generated', 'Generated standard Mozilla Bugzilla DTD XML', 'info');
+    } catch (e: any) {
+      toast('Export Error', e.message, 'alert');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportXml = async () => {
+    try {
+      const xml = exportedXml || (await api.exportBugzillaXml());
       const blob = new Blob([xml], { type: 'application/xml' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -104,21 +119,53 @@ export const ImportExportModal: React.FC = () => {
         {/* Content */}
         <div className="p-6 space-y-6 text-xs font-sans">
           {/* Export Section */}
-          <div className="p-4 rounded-xl border border-slate-800 bg-slate-950 space-y-3">
-            <div className="flex items-center justify-between gap-4">
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-950 space-y-3 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h4 className="font-bold text-sm text-slate-200">Export to Standard Bugzilla XML</h4>
                 <p className="text-slate-400 text-xs mt-0.5 font-normal leading-relaxed">
                   Generates standard <code className="text-emerald-400">&lt;bugzilla&gt;</code> DTD-compatible XML with all bugs, flags, comments, milestones, and blocker graphs.
                 </p>
               </div>
-              <button
-                onClick={handleExportXml}
-                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold shadow-xs transition-all duration-150 active:scale-[0.98] font-mono shrink-0"
-              >
-                <Download className="w-4 h-4" /> Download XML
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handlePreviewExport}
+                  disabled={isExporting}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-850 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98] font-mono"
+                >
+                  <Eye className="w-3.5 h-3.5 text-emerald-400" /> {isExporting ? 'Generating...' : 'Preview XML'}
+                </button>
+                <button
+                  onClick={handleExportXml}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98] font-mono"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download XML
+                </button>
+              </div>
             </div>
+
+            {exportedXml && (
+              <div className="mt-3 pt-3 border-t border-slate-850 space-y-2 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-emerald-400 font-bold">
+                    Generated &lt;bugzilla&gt; DTD Output Preview:
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(exportedXml);
+                      toast('Copied', 'XML copied to clipboard', 'info');
+                    }}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-850 hover:bg-slate-800 text-slate-300 text-[11px] font-mono border border-slate-700"
+                  >
+                    <Copy className="w-3 h-3" /> Copy XML
+                  </button>
+                </div>
+                <pre className="p-3 bg-slate-900 rounded-lg border border-slate-800 text-slate-300 text-[11px] font-mono max-h-48 overflow-y-auto leading-relaxed shadow-inner">
+                  {exportedXml}
+                </pre>
+              </div>
+            )}
           </div>
 
           {/* Import Section */}

@@ -12,6 +12,7 @@ import {
   User,
   ArrowRight,
   Bug as BugIcon,
+  DownloadCloud,
 } from 'lucide-react';
 
 export const CommandPalette: React.FC = () => {
@@ -22,6 +23,7 @@ export const CommandPalette: React.FC = () => {
     setSelectedBugId,
     setActiveView,
     setIsCreateModalOpen,
+    setIsImportExportOpen,
     users,
     setCurrentUser,
     setSearchQuery,
@@ -43,6 +45,16 @@ export const CommandPalette: React.FC = () => {
 
   // Actions list
   const actions: { id: string; category: string; title: string; icon: React.ReactNode; run: () => void }[] = [
+    {
+      id: 'act-sync-xml',
+      category: 'Tools & Interop',
+      title: 'Bugzilla XML DTD Sync (Import / Export XML)',
+      icon: <DownloadCloud className="w-4 h-4 text-emerald-400" />,
+      run: () => {
+        setIsCommandPaletteOpen(false);
+        setIsImportExportOpen(true);
+      },
+    },
     {
       id: 'act-new-bug',
       category: 'Actions',

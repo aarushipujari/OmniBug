@@ -15,6 +15,7 @@ import {
   RefreshCw,
   HelpCircle,
   Zap,
+  Eye,
 } from 'lucide-react';
 
 export const CreateBugModal: React.FC = () => {
@@ -231,16 +232,24 @@ export const CreateBugModal: React.FC = () => {
                 {duplicateCandidates.slice(0, 3).map(dup => (
                   <div
                     key={dup.bugId}
-                    onClick={() => setSelectedBugId(dup.bugId)}
-                    className="p-2.5 bg-slate-950/80 hover:bg-slate-900 rounded-lg border border-slate-800 flex items-center justify-between text-xs cursor-pointer transition-colors"
+                    className="p-2.5 bg-slate-950/90 rounded-lg border border-slate-800 flex items-center justify-between text-xs transition-colors gap-3 shadow-xs"
                   >
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="font-mono font-bold text-emerald-400">#{dup.bugNumber}</span>
-                      <span className="text-slate-200 truncate">{dup.title}</span>
+                    <div className="flex items-center gap-2 truncate min-w-0">
+                      <span className="font-mono font-bold text-emerald-400 shrink-0">#{dup.bugNumber}</span>
+                      <span className="text-slate-200 truncate font-sans">{dup.title}</span>
                     </div>
-                    <span className="text-amber-400 font-mono text-[11px] font-bold shrink-0">
-                      {(dup.similarityScore * 100).toFixed(0)}% match
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-amber-400 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                        {(dup.similarityScore * 100).toFixed(0)}% match
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBugId(dup.bugId)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-white text-[11px] font-mono font-semibold border border-slate-700 transition-all duration-150 active:scale-95"
+                      >
+                        <Eye className="w-3 h-3 text-emerald-400" /> Compare / View
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -309,6 +318,16 @@ export const CreateBugModal: React.FC = () => {
                   <div className="text-[11px] text-slate-300 font-sans leading-relaxed pt-0.5">
                     <span className="text-slate-400 font-semibold">Root Cause: </span>
                     {analyzedPrediction.rootCauseAnalysis}
+                  </div>
+                )}
+                {analyzedPrediction.suggestedTestCase && (
+                  <div className="pt-1.5 space-y-1">
+                    <span className="text-[11px] font-mono text-cyan-300 block font-semibold">
+                      🧪 Generated Reproduction Test Template:
+                    </span>
+                    <pre className="p-2.5 bg-slate-900/90 text-slate-300 text-[11px] font-mono rounded-lg border border-slate-800 overflow-x-auto shadow-inner">
+                      {analyzedPrediction.suggestedTestCase}
+                    </pre>
                   </div>
                 )}
               </div>
