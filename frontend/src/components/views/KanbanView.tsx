@@ -128,6 +128,7 @@ export const KanbanView: React.FC = () => {
                 {col.status === 'UNCONFIRMED' && (
                   <button
                     onClick={() => setIsCreateModalOpen(true)}
+                    aria-label="Quick Add Bug"
                     className="p-1 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors"
                     title="Quick Add Bug"
                   >
@@ -137,7 +138,7 @@ export const KanbanView: React.FC = () => {
               </div>
 
               {/* Card List */}
-              <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 min-h-[140px]">
+              <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 min-h-[140px]" role="region" aria-label={`${col.label} column, ${colBugs.length} issues`}>
                 {colBugs.length === 0 ? (
                   <div className="h-28 border border-dashed border-slate-800/80 rounded-xl flex flex-col items-center justify-center p-3 text-center transition-colors">
                     <Sparkles className="w-4 h-4 text-slate-600 mb-1.5" />
@@ -161,6 +162,15 @@ export const KanbanView: React.FC = () => {
                       <div
                         key={bug.id}
                         draggable
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Open issue #${bug.bugNumber}: ${bug.title}, status ${bug.status}, severity ${bug.severity}`}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedBugId(bug.id);
+                          }
+                        }}
                         onDragStart={e => handleDragStart(e, bug.id)}
                         onClick={() => setSelectedBugId(bug.id)}
                         className={`p-3.5 bg-slate-900/90 hover:bg-slate-850/90 border border-slate-800/90 hover:border-slate-700/80 rounded-xl shadow-xs cursor-grab active:cursor-grabbing transition-all duration-200 group hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] ${getSeverityBorder(bug.severity)}`}

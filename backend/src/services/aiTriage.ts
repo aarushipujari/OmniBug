@@ -37,6 +37,13 @@ export interface TriagePrediction {
   parsedStackTrace?: ParsedStackTrace;
 }
 
+/**
+ * Deterministic Smart Triage & AST Traceback Engine
+ * 
+ * Provides deterministic AST traceback parsing, heuristic root-cause inference,
+ * NLP Jaccard duplicate detection, and automated reproduction test synthesis.
+ * Engineered for sub-millisecond local execution without cloud API dependencies.
+ */
 export class AITriageService {
   public static parseStackTrace(text: string): ParsedStackTrace | undefined {
     // 1. Python Traceback (Traceback (most recent call last): ... File "...", line ..., in ...)
@@ -385,4 +392,7 @@ export class AITriageService {
     };
   }
 }
+
+export const DeterministicTriageService = AITriageService;
+
 

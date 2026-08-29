@@ -1,6 +1,6 @@
 # 🐞 OmniBug
 
-**Enterprise Bug & Defect Lifecycle Management Platform Reconstructed from Bugzilla.**
+**Modern Bug & Defect Lifecycle Management Platform Reconstructed from Bugzilla.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-44%20passing-16a34a.svg)]()
@@ -8,7 +8,7 @@
 [![CI](https://img.shields.io/badge/CI-passing-16a34a.svg)]()
 [![Architecture](https://img.shields.io/badge/Stack-React%2018%20%2B%20Express%20REST-0284c7.svg)]()
 
-File a crash traceback, inspect unified patch diffs side-by-side, request peer review flags, and visualize blocker critical paths across multi-tiered software architectures. OmniBug preserves Bugzilla's battle-tested enterprise rigor—hierarchical domain models (*Products ➔ Components ➔ Milestones*), guarded state machines, and fine-grained reviewer flags—while reimagining the developer experience with instant sub-millisecond reactivity, AI triage intelligence, and terminal-grade command ergonomics.
+File a crash traceback, inspect unified patch diffs side-by-side, request peer review flags, and visualize blocker critical paths across multi-tiered software architectures. OmniBug preserves Bugzilla's core strengths—hierarchical domain models (*Products ➔ Components ➔ Milestones*), guarded state machines, and fine-grained reviewer flags—while modernizing the developer experience with instant sub-millisecond reactivity, deterministic AST smart triage, and terminal-grade command ergonomics.
 
 Built for **Track 2: Developer Tool Reconstruction — Bugzilla**.
 
@@ -201,6 +201,7 @@ Given a directed graph $G = (V, E)$ where vertices $V$ represent bugs and direct
 
 ## Quickstart & Local Setup
 
+### Option A: Local Multi-Process Dev Launcher
 ```bash
 # 1. Clone the repository
 git clone https://github.com/aarushipujari/OmniBug.git
@@ -212,11 +213,15 @@ npm run setup
 # 3. One-Command Dual Server Launch
 npm run dev
 ```
-
 Open **`http://localhost:5173`** in your browser.  
-*(Or start independently: `npm run dev` inside `/backend` on port 4000 and `/frontend` on port 5173).*
+*(Backend runs on port 4000, Frontend runs on port 5173 with API proxying).*
 
----
+### Option B: One-Command Containerized Launch (Docker)
+```bash
+# Build and run the entire unified stack in a single container
+docker compose up --build
+```
+Open **`http://localhost:4000`** in your browser. (The Express backend serves the compiled frontend single-page app and REST API endpoints).
 
 ---
 
@@ -224,10 +229,20 @@ Open **`http://localhost:5173`** in your browser.
 
 | Time | Action | What to Observe |
 |---|---|---|
-| **0:00 - 0:45** | **Auto-Triage Crash Traceback** | Click `+ New Bug` (<kbd>C</kbd>), enter `IndexError in AST optimizer`, paste a Python traceback, and click `✨ Auto-Analyze`. Observe the extracted culprit file/line (`optimizer.py:184`), deterministic confidence score (`88% Confidence`), and duplicate similarity alerts. Click `▶ Run Test in Sandbox` to execute the synthesized test live. |
+| **0:00 - 0:45** | **Deterministic Crash Traceback Triage** | Click `+ New Bug` (<kbd>C</kbd>), enter `IndexError in AST optimizer`, paste a Python traceback, and click `✨ Auto-Analyze`. Observe the extracted culprit file/line (`optimizer.py:184`), deterministic confidence score (`88% Confidence`), and duplicate similarity alerts. Click `▶ Run Test in Sandbox` to execute the synthesized test live. |
 | **0:45 - 1:30** | **Collaborative Workflow & Slash Commands** | Open **Bug #1001**. Observe the persistent top pipeline header (`1. Reported ➔ ... ➔ 4. Review`). Switch to *Patch Diffs* tab to inspect side-by-side 2-column unified git diffs. In comments, type `/priority P1` and `/log 2.5h Fixed buffer bounds` to witness instant atomic mutation with micro-audit logging. |
 | **1:30 - 2:15** | **Blocker Topology & Critical Path DAG** | Navigate to **Dependency Graph (DAG)**. Observe Kahn's Topological Sorting algorithm spatial levels and the red-highlighted **Critical Path** showing which blocker chain delays release delivery. |
 | **2:15 - 3:00** | **Decision-Support Telemetry & Drill-Downs** | Open **Analytics & SLA**. Observe the 4 operational decision-support cards (*Release Threats*, *Triage Velocity*, *Defect Aging*, *Security Quarantine*). Click `[Inspect 2 Blockers ➔]` to instantly drill down into the filtered issue table without manual searching. |
+
+---
+
+## Why Deterministic Smart Triage Beats Black-Box LLMs
+
+Rather than delegating defect triage to opaque third-party cloud LLM APIs, OmniBug implements a dedicated **Deterministic AST & Heuristic Triage Engine**:
+- **100% Offline & Private**: Zero source code or crash stack traces leave your perimeter; works entirely air-gapped without cloud API dependencies.
+- **Zero API Key / Cost Overhead**: Eliminates recurring token costs, rate limits, and latency spikes.
+- **Sub-Millisecond Execution**: Instant AST frame extraction and Jaccard NLP similarity matching in $< 5\text{ms}$.
+- **Auditable & Deterministic**: Reproducible scoring rules with exact explanation cards rather than unpredictable hallucinated classifications.
 
 ---
 
@@ -237,9 +252,9 @@ Open **`http://localhost:5173`** in your browser.
 |---|---|---|
 | **Core Defect Lifecycle & Hierarchy** | Full Bugzilla domain model (*Products ➔ Components ➔ Milestones*), guarded state machine (`UNCONFIRMED` ➔ `CLOSED`), reviewer flags (`?`, `+`, `-`, `X`), time tracking, and full Bugzilla XML round-tripping. | 6 State machine tests + 4 XML round-trip tests (`npm test`) |
 | **Traceback AST Parser & Blocker DAG** | Multi-language crash parser (Python, V8, Go, Rust, ASAN), live NLP duplicate detection, Kahn's algorithm critical path DAG engine, and sandboxed test execution. | 5 AST/Traceback tests + 4 DAG critical-path tests |
-| **Security, RBAC & Mutation Isolation** | Cryptographically signed HMAC-SHA256 session tokens (`/api/auth/token`), capability gates (`security_override`, `verify_bug`), explicit domain commands (`/transition`, `/assign`, `/set-security`), and optimistic concurrency locks (`version`). | 8 RBAC, HMAC token & concurrency tests |
-| **Ergonomics & Studio UI** | Linear/shadcn-inspired interface with dark mode, persistent visual lifecycle stepper, unified chronological activity timeline, live floating AI suggestion card, and keyboard navigation (<kbd>Ctrl+K</kbd>, <kbd>C</kbd>, <kbd>J</kbd>/<kbd>K</kbd>). | Verified across React 18 component hierarchy |
-| **Single-Command Reliability** | 44/44 passing automated backend tests, single-command launcher (`npm run dev`), single-command verification (`npm run check`), and automated GitHub Actions CI workflow. | `npm run check` compiles cleanly with 0 errors |
+| **Security, RBAC & Mutation Isolation** | Cryptographically signed HMAC-SHA256 session tokens (`/api/auth/token`), capability gates (`security_override`, `verify_bug`), explicit domain commands (`/transition`, `/assign`, `/set-security`), and optimistic concurrency locks (`lockVersion`). | 8 RBAC, HMAC token & concurrency tests |
+| **Ergonomics & Studio UI** | Linear/shadcn-inspired interface with dark mode, persistent visual lifecycle stepper, unified chronological activity timeline, and comprehensive keyboard accessibility (<kbd>Ctrl+K</kbd>, <kbd>C</kbd>, <kbd>J</kbd>/<kbd>K</kbd>, <kbd>Esc</kbd>). | Verified across React 18 component hierarchy |
+| **Single-Command Reliability** | 44/44 passing automated backend tests, single-command launcher (`npm run dev`), Docker deployment (`docker compose up`), and verification (`npm run check`). | `npm run check` compiles cleanly with 0 errors |
 
 ---
 
@@ -247,16 +262,21 @@ Open **`http://localhost:5173`** in your browser.
 
 - **Cryptographic HMAC Session Tokens**: Client requests can authenticate via `Authorization: Bearer <signed-token>` generated with SHA-256 HMAC signatures (`POST /api/auth/token`), or use the `X-Demo-Persona-Id` header for transparent local judging simulation.
 - **Guarded Domain Mutations**: Status transitions to `VERIFIED` and `CLOSED` strictly require QA Lead or Admin capability tokens. Generic `PATCH /bugs/:id` is guarded and enforces optimistic concurrency locks.
-- **Optimistic Concurrency Control**: Every bug mutation increments a numeric `version` counter. Concurrent overwrites are rejected with `409 Conflict` errors to prevent race conditions.
+- **Optimistic Concurrency Control**: Every bug mutation increments a numeric `lockVersion` counter. Concurrent overwrites are rejected with `409 Conflict` errors to prevent race conditions.
 - **Security Quarantine**: Issues flagged as `isSecuritySensitive` require explicit `security_override` capability to modify.
 
 ---
 
-## Explicit Design Trade-offs & Known Scope Limitations
+## Explicit Design Trade-offs & Production Migration Roadmap
 
 To maintain absolute credibility and transparent engineering standards, OmniBug explicitly documents the following design trade-offs:
-1. **Authentication Mode**: Implements HMAC-SHA256 signed session tokens and persona switching optimized for local evaluation. Production deployment would integrate external OAuth2/OIDC providers.
-2. **Persistence Adapter**: Employs an in-memory transactional store with atomic JSON disk snapshots and optimistic concurrency locks. Multi-node clusters would swap this for PostgreSQL/CockroachDB via the existing Repository abstraction.
+1. **Persistence Layer**: Implements a local-first in-memory transactional store with atomic JSON snapshots and optimistic locking for instant local evaluation. The repository is structured around an abstract `Store` interface with a direct migration path to PostgreSQL (`pg`/Prisma) for distributed deployments:
+   | Entity | Local Store Model | Production PostgreSQL Table |
+   |---|---|---|
+   | Product / Component | `products[].components[]` | `products` 1-to-N `components` |
+   | Bug / Defect | `bugs[]` with `lockVersion` | `bugs` table with `INTEGER lock_version` |
+   | Audit Trail | `auditLogs[]` (immutable) | `audit_logs` append-only partitioned table |
+2. **Authentication**: Uses HMAC-SHA256 signed session tokens with demo persona simulation for friction-free evaluation. Production deployment would hook into standard OIDC/OAuth2 providers (Okta, GitHub, Google).
 3. **Traceback AST Parsing**: Uses deterministic regex AST tokenizers optimized for instant sub-millisecond client reactivity without requiring external cloud API round-trips.
 
 ---

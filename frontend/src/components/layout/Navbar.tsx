@@ -68,6 +68,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
         <div className="relative">
           <button
             onClick={() => setIsProductMenuOpen(!isProductMenuOpen)}
+            aria-label="Select product workspace scope"
+            aria-expanded={isProductMenuOpen}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-200 transition-all duration-150 active:scale-[0.98]"
           >
             <Layers className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -87,6 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
                   setActiveProductId(null);
                   setIsProductMenuOpen(false);
                 }}
+                aria-label="Scope to all products"
                 className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors duration-150 ${
                   activeProductId === null
                     ? 'bg-emerald-500/15 text-emerald-300 font-medium'
@@ -103,6 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
                     setActiveProductId(p.id);
                     setIsProductMenuOpen(false);
                   }}
+                  aria-label={`Scope to product ${p.name}`}
                   className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors duration-150 ${
                     activeProductId === p.id
                       ? 'bg-emerald-500/15 text-emerald-300 font-medium'
@@ -128,12 +132,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            aria-label="Filter and search issues"
             placeholder="Filter issues (is:open, severity:blocker, assignee:alex)..."
             className="w-full pl-9 pr-14 py-1.5 bg-slate-950/80 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500/60 transition-all duration-150 font-mono shadow-inner shadow-slate-950/40"
           />
           <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1">
             <button
               onClick={() => setIsCommandPaletteOpen(true)}
+              aria-label="Open Command Palette (Ctrl+K)"
               className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-[10px] border border-slate-700/80 transition-colors font-mono"
               title="Open Command Palette (Ctrl+K)"
             >
@@ -157,6 +163,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
                     setSearchQuery(`${searchQuery} ${ft.token}`.trim());
                   }
                 }}
+                aria-label={`Filter token ${ft.label}`}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-sans font-medium transition-all duration-150 active:scale-[0.97] ${
                   isFilterActive
                     ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 font-semibold'
@@ -175,6 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
         {/* Create Bug Button */}
         <button
           onClick={() => setIsCreateModalOpen(true)}
+          aria-label="Create new bug report (C)"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm shadow-emerald-950/50 transition-all duration-150 active:scale-[0.98]"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -185,6 +193,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
         {/* Notification Bell */}
         <button
           onClick={onOpenNotifications}
+          aria-label={`Activity Notifications, ${unreadCount} unread`}
           className="relative p-2 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-slate-100 border border-slate-800 hover:border-slate-700 transition-all duration-150 active:scale-[0.98]"
           title="Activity Notifications"
         >
@@ -198,6 +207,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
         <div className="relative">
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            aria-label={`Switch persona, currently active: ${currentUser.name} (${currentUser.role})`}
+            aria-expanded={isUserMenuOpen}
             className="flex items-center gap-2 p-1 pl-2 rounded-lg bg-slate-850 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-all duration-150 text-left active:scale-[0.98]"
           >
             <div className="w-6 h-6 rounded-full overflow-hidden border border-slate-700 bg-slate-800">

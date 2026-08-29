@@ -218,14 +218,20 @@ export const CommandPalette: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center pt-24 px-4 animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-start justify-center pt-20 p-4 animate-in fade-in duration-100"
+      onClick={() => setIsCommandPaletteOpen(false)}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Command Palette Quick Launcher"
+    >
       <div
-        className="w-full max-w-xl bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden font-sans"
+        className="w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        {/* Search Input */}
-        <div className="flex items-center px-4 py-3 border-b border-slate-800 bg-slate-850">
-          <Search className="w-4 h-4 text-slate-400 mr-3" />
+        {/* Search Header */}
+        <div className="px-4 py-3 border-b border-slate-800 flex items-center gap-3 bg-slate-850">
+          <Search className="w-4 h-4 text-emerald-400 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -235,10 +241,11 @@ export const CommandPalette: React.FC = () => {
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
+            aria-label="Search commands, issues, and personas"
             placeholder="Type a command, issue #, keyword or persona..."
             className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none font-mono"
           />
-          <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono">
+          <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono" aria-label="Escape key to close">
             ESC
           </kbd>
         </div>

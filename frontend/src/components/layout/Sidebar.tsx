@@ -97,13 +97,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
           <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1 mb-1.5 flex items-center gap-1.5 font-mono">
             <Layers className="w-3 h-3 text-slate-400" /> Workspace Views
           </div>
-          <nav className="space-y-0.5">
+          <nav className="space-y-0.5" aria-label="Workspace views">
             {navViews.map(view => {
               const isActive = activeView === view.id;
               return (
                 <button
                   key={view.id}
                   onClick={() => setActiveView(view.id)}
+                  aria-label={`Navigate to ${view.label}${view.badge ? ` (${view.badge} unconfirmed)` : ''}`}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 active:scale-[0.98] ${
                     isActive
                       ? 'bg-emerald-500/15 text-emerald-300 font-semibold border border-emerald-500/30 shadow-xs'
@@ -130,13 +132,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
           <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1 mb-1.5 flex items-center gap-1.5 font-mono">
             <Sparkles className="w-3 h-3 text-slate-400" /> Smart Filters
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-0.5" role="group" aria-label="Quick filters">
             {quickFilters.map(filter => {
               const isSelected = searchQuery === filter.query;
               return (
                 <button
                   key={filter.id}
                   onClick={() => setSearchQuery(filter.query)}
+                  aria-label={`Filter by ${filter.label}, ${filter.count} matching issues`}
+                  aria-pressed={isSelected}
                   className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 active:scale-[0.98] ${
                     isSelected
                       ? 'bg-slate-800 text-white font-medium border border-slate-700 shadow-xs'
@@ -160,6 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
         {onOpenArchitecture && (
           <button
             onClick={onOpenArchitecture}
+            aria-label="Open architecture and viva examiner guide"
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-emerald-300 hover:text-white bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 transition-all duration-150 active:scale-[0.98] font-medium shadow-xs"
           >
             <Cpu className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -169,6 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
 
         <button
           onClick={onOpenImportExport}
+          aria-label="Open Bugzilla XML import and export dialog"
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-850 border border-slate-800/80 hover:border-slate-700 transition-all duration-150 active:scale-[0.98]"
         >
           <DownloadCloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -177,6 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
 
         <button
           onClick={handleReset}
+          aria-label="Reset in-memory and disk database to initial seed data"
           className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:text-rose-300 hover:bg-rose-500/10 transition-all duration-150 active:scale-[0.98]"
           title="Reset database to seed records"
         >

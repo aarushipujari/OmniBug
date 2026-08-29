@@ -106,6 +106,7 @@ export const TableView: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={toggleSelectAll}
+            aria-label={selectedIds.length > 0 ? `Deselect all ${bugs.length} issues` : `Select all ${bugs.length} issues`}
             className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-colors duration-150"
           >
             {selectedIds.length > 0 && selectedIds.length === bugs.length ? (
@@ -124,6 +125,8 @@ export const TableView: React.FC = () => {
             <div className="relative animate-in fade-in duration-100">
               <button
                 onClick={() => setBulkActionOpen(!bulkActionOpen)}
+                aria-label={`Bulk actions menu for ${selectedIds.length} selected issues`}
+                aria-expanded={bulkActionOpen}
                 className="flex items-center gap-1.5 px-3 py-1 bg-slate-850 hover:bg-slate-800 text-xs text-slate-200 rounded-lg border border-slate-700/80 transition-all duration-150 shadow-xs"
               >
                 <span>Bulk Actions ({selectedIds.length})</span>
