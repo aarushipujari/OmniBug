@@ -31,7 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
     searchQuery,
     setSearchQuery,
     currentUser,
-    bugs,
+    allBugs,
     refreshData,
     toast,
   } = useApp();
@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
       id: 'triage',
       label: 'Speed Triage',
       icon: <Inbox className="w-4 h-4 shrink-0" />,
-      badge: bugs.filter(b => b.status === 'UNCONFIRMED').length,
+      badge: allBugs.filter(b => b.status === 'UNCONFIRMED' || b.flags.some(f => f.name === 'needinfo' && f.status === '?')).length,
     },
     { id: 'milestones', label: 'Milestones & Releases', icon: <Milestone className="w-4 h-4 shrink-0" /> },
     { id: 'analytics', label: 'Analytics & SLA', icon: <BarChart3 className="w-4 h-4 shrink-0" /> },
@@ -64,28 +64,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
       label: 'Assigned to Me',
       query: `assignee:${currentUser.name.split(' ')[0].toLowerCase()}`,
       icon: <User className="w-3.5 h-3.5 text-blue-400 shrink-0" />,
-      count: bugs.filter(b => b.assigneeId === currentUser.id).length,
+      count: allBugs.filter(b => b.assigneeId === currentUser.id).length,
     },
     {
       id: 'needs-info',
       label: 'Needs My Info / Review',
       query: 'flag:needinfo',
       icon: <HelpCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />,
-      count: bugs.filter(b => b.flags.some(f => f.requesteeId === currentUser.id && f.status === '?')).length,
+      count: allBugs.filter(b => b.flags.some(f => f.requesteeId === currentUser.id && f.status === '?')).length,
     },
     {
       id: 'blockers',
       label: 'Release Blockers',
       query: 'severity:blocker',
       icon: <Flame className="w-3.5 h-3.5 text-red-400 shrink-0" />,
-      count: bugs.filter(b => b.severity === 'blocker').length,
+      count: allBugs.filter(b => b.severity === 'blocker').length,
     },
     {
       id: 'security',
       label: 'Security Sensitive',
       query: 'is:open security',
       icon: <ShieldCheck className="w-3.5 h-3.5 text-purple-400 shrink-0" />,
-      count: bugs.filter(b => b.isSecuritySensitive).length,
+      count: allBugs.filter(b => b.isSecuritySensitive).length,
     },
   ];
 
@@ -160,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
         {onOpenArchitecture && (
           <button
             onClick={onOpenArchitecture}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-emerald-300 hover:text-white bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 transition-all duration-150 active:scale-[0.98] font-medium"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-emerald-300 hover:text-white bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 transition-all duration-150 active:scale-[0.98] font-medium shadow-xs"
           >
             <Cpu className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span>Architecture & Viva Guide</span>

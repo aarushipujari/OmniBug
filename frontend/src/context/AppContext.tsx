@@ -14,6 +14,13 @@ export interface NotificationItem {
   read: boolean;
 }
 
+export interface ToastNotification {
+  id: string;
+  title: string;
+  message?: string;
+  type: 'info' | 'success' | 'warning' | 'alert';
+}
+
 interface AppContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
@@ -26,6 +33,7 @@ interface AppContextType {
   activeProductId: string | null;
   setActiveProductId: (id: string | null) => void;
   
+  allBugs: Bug[];
   bugs: Bug[];
   isLoadingBugs: boolean;
   searchQuery: string;
@@ -43,9 +51,15 @@ interface AppContextType {
   isImportExportOpen: boolean;
   setIsImportExportOpen: (open: boolean) => void;
   
+  isArchitectureOpen: boolean;
+  setIsArchitectureOpen: (open: boolean) => void;
+  
   notifications: NotificationItem[];
   markNotificationRead: (id: string) => void;
   clearAllNotifications: () => void;
+  
+  activeToasts: ToastNotification[];
+  dismissToast: (id: string) => void;
   
   refreshData: () => Promise<void>;
   toast: (title: string, message?: string, type?: 'info' | 'success' | 'warning' | 'alert') => void;
@@ -67,6 +81,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [products, setProducts] = useState<Product[]>([]);
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   
+  const [allBugs, setAllBugs] = useState<Bug[]>([]);
   const [bugs, setBugs] = useState<Bug[]>([]);
   const [isLoadingBugs, setIsLoadingBugs] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('is:open');
@@ -75,6 +90,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isImportExportOpen, setIsImportExportOpen] = useState<boolean>(false);
+  const [isArchitectureOpen, setIsArchitectureOpen] = useState<boolean>(false);
+
+  const [activeToasts, setActiveToasts] = useState<ToastNotification[]>([]);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([
     {
@@ -106,7 +124,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   ]);
 
+  const dismissToast = useCallback((id: string) => {
+    setActiveToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
   const toast = useCallback((title: string, message?: string, type: 'info' | 'success' | 'warning' | 'alert' = 'info') => {
+    const toastId = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    
+    // Add to floating toasts
+    const newToast: ToastNotification = {
+      id: toastId,
+      title,
+      message,
+      type,
+    };
+    setActiveToasts(prev => [newToast, ...prev.slice(0, 3)]);
+
+    // Auto-dismiss floating toast after 3.5 seconds
+    setTimeout(() => {
+      dismissToast(toastId);
+    }, 3500);
+
+    // Also record in Notification Drawer history
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}`,
       title,
@@ -116,7 +155,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       read: false,
     };
     setNotifications(prev => [newNotif, ...prev]);
-  }, []);
+  }, [dismissToast]);
 
   const refreshData = useCallback(async () => {
     try {
@@ -125,13 +164,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (activeProductId) params.product = activeProductId;
       if (searchQuery) params.search = searchQuery;
 
-      const [bugsRes, prodsRes, usersRes] = await Promise.all([
+      const unfilteredParams: Record<string, string> = {};
+      if (activeProductId) unfilteredParams.product = activeProductId;
+
+      const [bugsRes, allBugsRes, prodsRes, usersRes] = await Promise.all([
         api.getBugs(params),
+        api.getBugs(unfilteredParams),
         api.getProducts(),
         api.getUsers(),
       ]);
 
       setBugs(bugsRes.data || []);
+      setAllBugs(allBugsRes.data || []);
       setProducts(prodsRes || []);
       if (usersRes && usersRes.length > 0) {
         setUsers(usersRes);
@@ -147,26 +191,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshData();
   }, [refreshData]);
 
-  // Global hotkeys (Ctrl+K / Cmd+K, C for new bug, Escape)
+  // Global hotkeys (Ctrl+K / Cmd+K, C for new bug, Escape to close modals)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsCommandPaletteOpen(prev => !prev);
-      } else if (e.key === 'c' && !isCreateModalOpen && !isCommandPaletteOpen && !selectedBugId) {
+      } else if (e.key === 'c' && !isCreateModalOpen && !isCommandPaletteOpen && !selectedBugId && !isImportExportOpen && !isArchitectureOpen) {
         const activeTag = (document.activeElement?.tagName || '').toLowerCase();
         if (activeTag !== 'input' && activeTag !== 'textarea') {
           e.preventDefault();
           setIsCreateModalOpen(true);
         }
       } else if (e.key === 'Escape') {
-        setIsCommandPaletteOpen(false);
+        if (isCommandPaletteOpen) setIsCommandPaletteOpen(false);
+        if (isCreateModalOpen) setIsCreateModalOpen(false);
+        if (isImportExportOpen) setIsImportExportOpen(false);
+        if (isArchitectureOpen) setIsArchitectureOpen(false);
+        if (selectedBugId) setSelectedBugId(null);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCreateModalOpen, isCommandPaletteOpen, selectedBugId]);
+  }, [isCreateModalOpen, isCommandPaletteOpen, selectedBugId, isImportExportOpen, isArchitectureOpen]);
 
   const markNotificationRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -187,6 +235,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         products,
         activeProductId,
         setActiveProductId,
+        allBugs,
         bugs,
         isLoadingBugs,
         searchQuery,
@@ -199,9 +248,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsCommandPaletteOpen,
         isImportExportOpen,
         setIsImportExportOpen,
+        isArchitectureOpen,
+        setIsArchitectureOpen,
         notifications,
         markNotificationRead,
         clearAllNotifications,
+        activeToasts,
+        dismissToast,
         refreshData,
         toast,
       }}

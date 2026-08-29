@@ -4,6 +4,7 @@ import { Navbar } from './components/layout/Navbar.js';
 import { Sidebar } from './components/layout/Sidebar.js';
 import { CommandPalette } from './components/layout/CommandPalette.js';
 import { NotificationDrawer } from './components/layout/NotificationDrawer.js';
+import { ToastContainer } from './components/common/ToastContainer.js';
 import { TableView } from './components/views/TableView.js';
 import { KanbanView } from './components/views/KanbanView.js';
 import { GraphView } from './components/views/GraphView.js';
@@ -16,9 +17,14 @@ import { ImportExportModal } from './components/common/ImportExportModal.js';
 import { ArchitectureModal } from './components/common/ArchitectureModal.js';
 
 export const App: React.FC = () => {
-  const { activeView, isLoadingBugs, setIsImportExportOpen } = useApp();
+  const {
+    activeView,
+    isLoadingBugs,
+    setIsImportExportOpen,
+    isArchitectureOpen,
+    setIsArchitectureOpen,
+  } = useApp();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -64,7 +70,7 @@ export const App: React.FC = () => {
         </main>
       </div>
 
-      {/* Modals & Drawers */}
+      {/* Modals, Drawers & Toast Banner */}
       <BugDetailModal />
       <CreateBugModal />
       <CommandPalette />
@@ -77,6 +83,7 @@ export const App: React.FC = () => {
         isOpen={isArchitectureOpen}
         onClose={() => setIsArchitectureOpen(false)}
       />
+      <ToastContainer />
     </div>
   );
 };
