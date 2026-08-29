@@ -243,8 +243,18 @@ export const CreateBugModal: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsCreateModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setIsCreateModalOpen]);
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 select-none font-sans animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 select-none font-sans animate-in fade-in duration-150" role="dialog" aria-modal="true" aria-labelledby="create-bug-title">
       <div
         className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
@@ -253,13 +263,14 @@ export const CreateBugModal: React.FC = () => {
         <div className="px-6 py-4 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Plus className="w-5 h-5 text-emerald-400" />
-            <h3 className="font-bold text-sm text-slate-100 font-sans">
+            <h3 id="create-bug-title" className="font-bold text-sm text-slate-100 font-sans">
               Enter Bug / Defect Report
             </h3>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(false)}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
           </button>

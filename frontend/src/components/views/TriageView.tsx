@@ -460,16 +460,16 @@ export const TriageView: React.FC = () => {
               </div>
             </div>
 
-            {/* AI Triage Classifier & Root Cause Suggestions */}
+            {/* Deterministic Smart Triage & Traceback Engine */}
             <div className="space-y-4">
               {aiPrediction && (
                 <div className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-950/10 space-y-4 shadow-md">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
                       <Sparkles className="w-4 h-4 text-emerald-400" />
-                      <span>Explainable AI Triage & Subsystem Routing</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                        88% Confidence
+                      <span>Deterministic Smart Triage & Subsystem Routing</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" title="Deterministic AST traceback analysis (100% offline, zero cloud API cost)">
+                        AST Heuristic • 100% Offline
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">

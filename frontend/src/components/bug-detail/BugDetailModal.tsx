@@ -179,10 +179,20 @@ export const BugDetailModal: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedBugId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setSelectedBugId]);
+
   const patchAttachments = bug.attachments.filter(a => a.isPatch && a.patchContent);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 select-none font-sans animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 select-none font-sans animate-in fade-in duration-150" role="dialog" aria-modal="true" aria-labelledby="bug-modal-title">
       <div
         className="w-full max-w-6xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
         onClick={e => e.stopPropagation()}
@@ -195,7 +205,7 @@ export const BugDetailModal: React.FC = () => {
             </span>
             <span className="text-slate-600 font-mono">/</span>
             <div className="flex items-center gap-2 truncate">
-              <span className="font-semibold text-sm text-slate-100 truncate font-sans">{bug.title}</span>
+              <h2 id="bug-modal-title" className="font-semibold text-sm text-slate-100 truncate font-sans">{bug.title}</h2>
               {bug.isSecuritySensitive && (
                 <span className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0">
                   <Shield className="w-3 h-3 text-purple-400" /> Security Confidential
@@ -209,6 +219,7 @@ export const BugDetailModal: React.FC = () => {
               onClick={handleVote}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-xs text-slate-200 border border-slate-700 transition-all duration-150 active:scale-[0.98] font-mono"
               title="Upvote this issue"
+              aria-label={`Upvote issue, current votes ${bug.votes}`}
             >
               <ThumbsUp className="w-3.5 h-3.5 text-emerald-400" />
               <span>{bug.votes}</span>
@@ -217,6 +228,7 @@ export const BugDetailModal: React.FC = () => {
             <button
               onClick={() => setSelectedBugId(null)}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              aria-label="Close dialog"
             >
               <X className="w-5 h-5" />
             </button>

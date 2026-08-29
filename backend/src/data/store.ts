@@ -7,7 +7,7 @@ import { SEED_USERS, SEED_PRODUCTS, SEED_BUGS, SEED_AUDIT_LOGS } from './seedDat
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, '../../data-storage');
-const DB_FILE = path.join(DATA_DIR, 'omnibug-db.json');
+const DB_FILE = process.env.OMNIBUG_DB_PATH || path.join(DATA_DIR, 'omnibug-db.json');
 
 export interface DatabaseSchema {
   users: User[];
@@ -19,6 +19,7 @@ export interface DatabaseSchema {
 
 class Store {
   private data: DatabaseSchema;
+  private inMemoryOnly: boolean = process.env.NODE_ENV === 'test';
 
   constructor() {
     this.data = {
@@ -28,7 +29,13 @@ class Store {
       auditLogs: [...SEED_AUDIT_LOGS],
       nextBugNumber: 1008,
     };
-    this.loadFromDisk();
+    if (!this.inMemoryOnly) {
+      this.loadFromDisk();
+    }
+  }
+
+  public setInMemoryMode(enabled: boolean) {
+    this.inMemoryOnly = enabled;
   }
 
   private loadFromDisk() {
@@ -46,6 +53,9 @@ class Store {
   }
 
   public saveToDisk() {
+    if (this.inMemoryOnly || process.env.NODE_ENV === 'test') {
+      return; // Never write to disk during automated test runs
+    }
     try {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });

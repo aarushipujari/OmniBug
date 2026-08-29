@@ -20,6 +20,8 @@ function assert(condition: boolean, testName: string, errorDetail?: string) {
   }
 }
 
+process.env.NODE_ENV = 'test';
+
 async function runAllTests() {
   console.log('\n========================================');
   console.log('🧪 RUNNING OMNIBUG BACKEND TEST SUITE');
@@ -27,6 +29,7 @@ async function runAllTests() {
 
   // Test Group 1: Store & Seed Data
   console.log('📦 1. Store & Seed Data Tests');
+  store.setInMemoryMode(true);
   store.resetToSeed();
   const bugs = store.getBugs();
   const products = store.getProducts();
