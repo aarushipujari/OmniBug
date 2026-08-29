@@ -14,7 +14,7 @@ export class ProductController {
 
   public static getProductById(req: Request, res: Response) {
     try {
-      const product = store.getProductById(req.params.id);
+      const product = store.getProductById(String(req.params.id));
       if (!product) return res.status(404).json({ error: 'Product not found' });
       return res.json({ data: product });
     } catch (err: any) {
@@ -45,7 +45,7 @@ export class ProductController {
 
   public static addComponent(req: Request, res: Response) {
     try {
-      const productId = req.params.id;
+      const productId = String(req.params.id);
       const product = store.getProductById(productId);
       if (!product) return res.status(404).json({ error: 'Product not found' });
 
@@ -76,7 +76,7 @@ export class ProductController {
 
   public static addMilestone(req: Request, res: Response) {
     try {
-      const productId = req.params.id;
+      const productId = String(req.params.id);
       const product = store.getProductById(productId);
       if (!product) return res.status(404).json({ error: 'Product not found' });
 

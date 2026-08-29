@@ -145,7 +145,7 @@ IndexError: Buffer overflow in AST walker`;
     isSecuritySensitive: triage1006.isSecuritySensitive,
   });
   assert(updatedWithAI?.severity === 'major', 'Persisted AI severity to bug-1006');
-  assert(updatedWithAI?.tags.includes('networking') || updatedWithAI?.tags.includes('redis'), 'Persisted AI tags to bug-1006');
+  assert(Boolean(updatedWithAI && (updatedWithAI.tags.includes('networking') || updatedWithAI.tags.includes('redis'))), 'Persisted AI tags to bug-1006');
 
   // Test Confirm as Bug transition (UNCONFIRMED -> NEW)
   const confirmValidation = StateMachineService.validateTransition(store.getBugById('bug-1006')!, 'NEW');
@@ -154,6 +154,34 @@ IndexError: Buffer overflow in AST walker`;
   const confirmedBug1006 = store.updateBug('bug-1006', { status: 'NEW' });
   assert(confirmedBug1006?.status === 'NEW', 'Bug #1006 confirmed to NEW status');
   assert(store.getBugById('bug-1006')?.status === 'NEW', 'Confirmed status persists in store');
+
+  // ==========================================
+  // 8. RBAC, Domain Commands & Security Tests
+  // ==========================================
+  console.log('\n🛡️ 8. RBAC, Domain Commands & Security Tests');
+  const developerUser = store.getUsers().find(u => u.role === 'developer')!;
+  const qaUser = store.getUsers().find(u => u.role === 'qa')!;
+  const adminUser = store.getUsers().find(u => u.role === 'admin')!;
+
+  assert(developerUser.role === 'developer', 'Developer persona identified');
+  assert(qaUser.role === 'qa', 'QA persona identified');
+  assert(adminUser.role === 'admin', 'Admin persona identified');
+
+  // Test domain command assignment with audit trail
+  const bugToAssign = store.getBugById('bug-1002')!;
+  const prevAssignee = bugToAssign.assigneeName;
+  store.updateBug('bug-1002', { assigneeId: developerUser.id, assigneeName: developerUser.name });
+  store.addAuditLog({
+    bugId: 'bug-1002',
+    actorId: adminUser.id,
+    actorName: adminUser.name,
+    changes: [{ field: 'assigneeName', oldValue: prevAssignee, newValue: developerUser.name }]
+  });
+
+  const updatedAssigned = store.getBugById('bug-1002')!;
+  assert(updatedAssigned.assigneeName === developerUser.name, 'Explicit domain assignment succeeded');
+  const auditLogs = store.getAuditLogs('bug-1002');
+  assert(auditLogs.some(l => l.changes.some(c => c.field === 'assigneeName' && c.newValue === developerUser.name)), 'Domain assignment produced immutable audit trail');
 
   // Test Summary
   console.log('\n========================================');

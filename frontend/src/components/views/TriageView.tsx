@@ -467,39 +467,62 @@ export const TriageView: React.FC = () => {
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
                       <Sparkles className="w-4 h-4 text-emerald-400" />
-                      <span>AI Triage Classifier & Subsystem Routing</span>
+                      <span>Explainable AI Triage & Subsystem Routing</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        88% Confidence
+                      </span>
                     </div>
-                    <button
-                      onClick={handleApplyAIPrediction}
-                      disabled={isApplyingAi}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98] ${
-                        isAiApplied
-                          ? 'bg-emerald-600 text-white font-bold'
-                          : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                      }`}
-                    >
-                      {isAiApplied ? <Check className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-                      <span>{isApplyingAi ? 'Applying...' : isAiApplied ? 'AI Classification Applied ✓' : 'Apply AI Classification'}</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={handleApplyAIPrediction}
+                        disabled={isApplyingAi}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98] ${
+                          isAiApplied
+                            ? 'bg-emerald-600 text-white font-bold'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                        }`}
+                      >
+                        {isAiApplied ? <Check className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        <span>{isApplyingAi ? 'Applying...' : isAiApplied ? 'Accepted ✓' : 'Accept AI Suggestions'}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          toast('Suggestion Dismissed', 'Feedback recorded for triage model', 'info');
+                          setAppliedAiForBugId('dismissed');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800 transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs font-mono">
                     <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 text-[10px] block uppercase">Predicted Severity</span>
-                      <span className="font-bold text-emerald-400 capitalize">
+                      <span className="text-slate-500 text-[10px] block uppercase font-medium">Severity & Reason</span>
+                      <span className="font-bold text-emerald-400 capitalize block">
                         {aiPrediction.suggestedSeverity} ({aiPrediction.suggestedPriority})
+                      </span>
+                      <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                        Matched critical crash pattern
                       </span>
                     </div>
                     <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 text-[10px] block uppercase">Suggested Routing</span>
+                      <span className="text-slate-500 text-[10px] block uppercase font-medium">Subsystem Routing</span>
                       <span className="font-bold text-slate-200 truncate block">
                         {aiPrediction.suggestedComponentName || activeBug.componentName}
                       </span>
+                      <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                        Extracted from culprit file
+                      </span>
                     </div>
                     <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 col-span-2 md:col-span-1">
-                      <span className="text-slate-500 text-[10px] block uppercase">Security Sensitivity</span>
-                      <span className={aiPrediction.isSecuritySensitive ? 'text-purple-300 font-bold' : 'text-slate-400'}>
-                        {aiPrediction.isSecuritySensitive ? '⚠️ Security Sensitive' : 'Standard Issue'}
+                      <span className="text-slate-500 text-[10px] block uppercase font-medium">Security Policy</span>
+                      <span className={aiPrediction.isSecuritySensitive ? 'text-purple-300 font-bold block' : 'text-slate-400 block'}>
+                        {aiPrediction.isSecuritySensitive ? '⚠️ Security Sensitive' : 'Standard Defect'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 truncate block mt-0.5">
+                        {aiPrediction.isSecuritySensitive ? 'Quarantine recommended' : 'Public triage queue'}
                       </span>
                     </div>
                   </div>

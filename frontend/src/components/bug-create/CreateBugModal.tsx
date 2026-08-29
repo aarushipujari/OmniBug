@@ -101,6 +101,31 @@ export const CreateBugModal: React.FC = () => {
     }
   }, [title, description]);
 
+  // Live real-time traceback and crash log analysis
+  useEffect(() => {
+    const isTrace = description.includes('Traceback') ||
+      description.includes('at ') ||
+      description.includes('panic:') ||
+      description.includes('AddressSanitizer') ||
+      description.includes('Error:') ||
+      description.includes('Exception:');
+
+    if (isTrace && description.trim().length > 25) {
+      const timer = setTimeout(async () => {
+        setIsAnalyzing(true);
+        try {
+          const prediction = await api.analyzeAndTriage(title || 'Crash Traceback', description, productId);
+          setAnalyzedPrediction(prediction);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsAnalyzing(false);
+        }
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [description, productId]);
+
   if (!isCreateModalOpen) return null;
 
   const handleAutoAnalyze = async () => {
@@ -323,13 +348,32 @@ export const CreateBugModal: React.FC = () => {
             {/* Parsed Stack Trace & Root Cause Preview Card */}
             {analyzedPrediction?.parsedStackTrace && (
               <div className="mt-2.5 p-3.5 bg-slate-950 rounded-xl border border-cyan-500/40 space-y-2 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5 font-mono">
-                    ⚡ Parsed {analyzedPrediction.parsedStackTrace.detectedLanguage} Traceback
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 font-mono border border-cyan-500/30">
-                    {analyzedPrediction.parsedStackTrace.errorType}
-                  </span>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5 font-mono">
+                      ⚡ Live {analyzedPrediction.parsedStackTrace.detectedLanguage} Traceback Detected
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 font-mono border border-cyan-500/30">
+                      {analyzedPrediction.parsedStackTrace.errorType}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (analyzedPrediction.suggestedSeverity) setSeverity(analyzedPrediction.suggestedSeverity);
+                      if (analyzedPrediction.suggestedPriority) setPriority(analyzedPrediction.suggestedPriority);
+                      if (analyzedPrediction.isSecuritySensitive) setIsSecuritySensitive(true);
+                      if (analyzedPrediction.suggestedComponentId) setComponentId(analyzedPrediction.suggestedComponentId);
+                      if (analyzedPrediction.suggestedTags?.length > 0) {
+                        setTags(prev => Array.from(new Set([...prev, ...analyzedPrediction.suggestedTags])));
+                      }
+                      toast('AI Suggestions Applied', `Auto-populated component & severity`, 'success');
+                    }}
+                    className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded text-xs font-mono font-bold transition-all duration-150 active:scale-95 shadow-xs"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Apply Suggestions ({analyzedPrediction.suggestedSeverity})</span>
+                  </button>
                 </div>
                 <div className="text-xs font-mono text-slate-300 bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
                   <div className="text-rose-400 font-bold mb-1">{analyzedPrediction.parsedStackTrace.errorMessage}</div>

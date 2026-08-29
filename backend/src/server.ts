@@ -28,7 +28,19 @@ app.use('/api', apiRouter);
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: '1.0.0',
+    version: '2.4.0',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Centralized Error Handling Middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[SERVER ERROR]', err);
+  const status = err.status || 500;
+  res.status(status).json({
+    error: err.message || 'Internal Server Error',
+    code: err.code || 'INTERNAL_ERROR',
+    status,
     timestamp: new Date().toISOString(),
   });
 });

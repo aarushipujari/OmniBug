@@ -5,7 +5,7 @@ import { BugFlag, FlagStatus } from '../types/index.js';
 export class FlagController {
   public static setFlag(req: Request, res: Response) {
     try {
-      const bugId = req.params.bugId;
+      const bugId = String(req.params.bugId);
       const bug = store.getBugById(bugId);
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 

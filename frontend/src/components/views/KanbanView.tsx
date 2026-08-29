@@ -147,6 +147,15 @@ export const KanbanView: React.FC = () => {
                 ) : (
                   colBugs.map(bug => {
                     const isBlocker = bug.blocks.length > 0;
+                    const getSeverityBorder = (sev: string) => {
+                      switch (sev) {
+                        case 'blocker': return 'border-l-[3px] border-l-red-500';
+                        case 'critical': return 'border-l-[3px] border-l-orange-500';
+                        case 'major': return 'border-l-[3px] border-l-amber-500';
+                        case 'enhancement': return 'border-l-[3px] border-l-emerald-500';
+                        default: return 'border-l-[3px] border-l-sky-500';
+                      }
+                    };
 
                     return (
                       <div
@@ -154,7 +163,7 @@ export const KanbanView: React.FC = () => {
                         draggable
                         onDragStart={e => handleDragStart(e, bug.id)}
                         onClick={() => setSelectedBugId(bug.id)}
-                        className="p-3.5 bg-slate-850/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-xl shadow-xs cursor-grab active:cursor-grabbing transition-all duration-150 group hover:shadow-md active:scale-[0.99]"
+                        className={`p-3.5 bg-slate-900/90 hover:bg-slate-850/90 border border-slate-800/90 hover:border-slate-700/80 rounded-xl shadow-xs cursor-grab active:cursor-grabbing transition-all duration-200 group hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] ${getSeverityBorder(bug.severity)}`}
                       >
                         {/* Top: ID + Severity */}
                         <div className="flex items-center justify-between gap-2 mb-2">

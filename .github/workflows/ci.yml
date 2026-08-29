@@ -1,0 +1,33 @@
+name: OmniBug CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: |
+          npm run setup
+
+      - name: Build TypeScript (Backend & Frontend)
+        run: |
+          npm run build
+
+      - name: Run Test Suite (35 Assertions)
+        run: |
+          npm test

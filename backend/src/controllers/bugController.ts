@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { store } from '../data/store.js';
 import { Bug, FieldChange, Comment, WorkLog, Attachment } from '../types/index.js';
-import { StateMachineService } from '../services/stateMachine.js';
+import { StateMachineService, VALID_STATUS_TRANSITIONS } from '../services/stateMachine.js';
 import { DependencyGraphService } from '../services/dependencyGraph.js';
 import { BugzillaExportImportService } from '../services/bugzillaExportImport.js';
 import { SlashCommandService } from '../services/slashCommands.js';
@@ -151,7 +151,7 @@ export class BugController {
 
   public static getBugById(req: Request, res: Response) {
     try {
-      const bug = store.getBugById(req.params.id);
+      const bug = store.getBugById(String(req.params.id));
       if (!bug) {
         return res.status(404).json({ error: 'Bug not found' });
       }
@@ -260,7 +260,7 @@ export class BugController {
 
   public static updateBug(req: Request, res: Response) {
     try {
-      const bugId = req.params.id;
+      const bugId = String(req.params.id);
       const currentBug = store.getBugById(bugId);
       if (!currentBug) {
         return res.status(404).json({ error: 'Bug not found' });
@@ -273,65 +273,53 @@ export class BugController {
       if (updates.status || updates.resolution !== undefined) {
         const targetStatus = updates.status || currentBug.status;
         const targetResolution = updates.resolution !== undefined ? updates.resolution : currentBug.resolution;
-        const dupId = updates.duplicateOfBugId !== undefined ? updates.duplicateOfBugId : currentBug.duplicateOfBugId;
+        const targetDuplicateOf = updates.duplicateOfBugId !== undefined ? updates.duplicateOfBugId : currentBug.duplicateOfBugId;
 
-        const validation = StateMachineService.validateTransition(currentBug, targetStatus, targetResolution, dupId);
+        const validation = StateMachineService.validateTransition(
+          currentBug,
+          targetStatus,
+          targetResolution,
+          targetDuplicateOf
+        );
+
         if (!validation.valid) {
-          return res.status(400).json({ error: validation.error });
+          return res.status(400).json({
+            error: validation.error,
+            allowedTransitions: VALID_STATUS_TRANSITIONS[currentBug.status]
+          });
         }
       }
 
-      // Auto-resolve componentName if componentId changed
-      if (updates.componentId && !updates.componentName) {
-        const prod = store.getProductById(currentBug.productId);
-        const comp = prod?.components.find(c => c.id === updates.componentId);
-        if (comp) {
-          updates.componentName = comp.name;
-        }
-      }
+      // Record audit logs for modified fields
+      const changes: { field: string; oldValue: any; newValue: any }[] = [];
+      const fieldsToTrack = [
+        'status', 'resolution', 'severity', 'priority', 'assigneeId', 'componentId',
+        'targetMilestone', 'isSecuritySensitive', 'duplicateOfBugId'
+      ] as const;
 
-      // Auto-resolve assigneeName if assigneeId changed
-      if (updates.assigneeId && !updates.assigneeName) {
-        const assigneeUser = store.getUserById(updates.assigneeId);
-        if (assigneeUser) {
-          updates.assigneeName = assigneeUser.name;
-        }
-      }
-
-      // Track changed fields for audit log
-      const changes: FieldChange[] = [];
-      const trackFields: (keyof Bug)[] = [
-        'status', 'resolution', 'severity', 'priority', 'assigneeId', 'assigneeName',
-        'targetMilestone', 'componentId', 'componentName', 'version', 'isSecuritySensitive',
-        'estimatedHours', 'remainingHours', 'duplicateOfBugId', 'tags'
-      ];
-
-      for (const field of trackFields) {
-        if (updates[field] !== undefined && updates[field] !== currentBug[field]) {
+      for (const field of fieldsToTrack) {
+        if (updates[field] !== undefined && updates[field] !== (currentBug as any)[field]) {
           changes.push({
             field,
-            oldValue: currentBug[field],
+            oldValue: (currentBug as any)[field],
             newValue: updates[field]
           });
         }
       }
 
-      // Handle duplicate side-effects (e.g. merge comments/CC list into target bug)
-      if (updates.resolution === 'DUPLICATE' && updates.duplicateOfBugId) {
-        const targetBug = store.getBugById(updates.duplicateOfBugId);
-        if (targetBug) {
-          const autoComment: Comment = {
-            id: `c-${Date.now()}`,
-            authorId: user.id,
-            authorName: user.name,
-            text: `*** Bug ${currentBug.bugNumber} has been marked as a duplicate of this bug. ***`,
-            createdAt: new Date().toISOString()
-          };
-          targetBug.comments.push(autoComment);
-          for (const cc of currentBug.ccList) {
-            if (!targetBug.ccList.includes(cc)) targetBug.ccList.push(cc);
-          }
-          store.updateBug(targetBug.id, targetBug);
+      // Auto-assign when component changes if assignee is default
+      if (updates.componentId && updates.componentId !== currentBug.componentId && !updates.assigneeId) {
+        const product = store.getProductById(currentBug.productId);
+        const comp = product?.components.find(c => c.id === updates.componentId);
+        if (comp) {
+          updates.componentName = comp.name;
+          updates.assigneeId = comp.leadId;
+          updates.assigneeName = comp.leadName;
+          changes.push({
+            field: 'assigneeName',
+            oldValue: currentBug.assigneeName,
+            newValue: comp.leadName
+          });
         }
       }
 
@@ -357,7 +345,7 @@ export class BugController {
 
   public static addComment(req: Request, res: Response) {
     try {
-      const bugId = req.params.id;
+      const bugId = String(req.params.id);
       const bug = store.getBugById(bugId);
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 
@@ -381,22 +369,20 @@ export class BugController {
         isInternal: Boolean(isInternal),
       };
 
-      const updatedBug = store.getBugById(bug.id) || bug;
-      updatedBug.comments.push(newComment);
-      store.updateBug(updatedBug.id, { comments: updatedBug.comments });
+      bug.comments.push(newComment);
+      store.updateBug(bug.id, { comments: bug.comments });
 
       store.addAuditLog({
-        bugId: updatedBug.id,
+        bugId: bug.id,
         actorId: user.id,
         actorName: user.name,
-        changes: [{ field: 'comment', oldValue: null, newValue: `Added comment #${updatedBug.comments.length}` }],
+        changes: [{ field: 'comment', oldValue: null, newValue: `Added comment #${bug.comments.length}` }],
         commentId: newComment.id,
       });
 
       return res.status(201).json({
         data: newComment,
-        bug: store.getBugById(updatedBug.id),
-        executedCommands: commandExecResult.executedCommands
+        executedCommands: commandExecResult.executedCommands,
       });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
@@ -405,7 +391,7 @@ export class BugController {
 
   public static addWorkLog(req: Request, res: Response) {
     try {
-      const bugId = req.params.id;
+      const bugId = String(req.params.id);
       const bug = store.getBugById(bugId);
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 
@@ -452,7 +438,7 @@ export class BugController {
 
   public static toggleVote(req: Request, res: Response) {
     try {
-      const bugId = req.params.id;
+      const bugId = String(req.params.id);
       const bug = store.getBugById(bugId);
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 
@@ -575,6 +561,152 @@ export class BugController {
       }
 
       return res.json({ importedCount: created.length, data: created });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Explicit Domain Command: POST /api/bugs/:id/transition
+  public static transitionBug(req: Request, res: Response) {
+    try {
+      const bugId = String(req.params.id);
+      const bug = store.getBugById(bugId);
+      if (!bug) return res.status(404).json({ error: 'Bug not found' });
+
+      const { status, resolution, duplicateOfBugId } = req.body;
+      const user = req.currentUser || req.body._currentUser || store.getUsers()[0];
+
+      if (!status) {
+        return res.status(400).json({ error: 'Target status is required for transition.' });
+      }
+
+      // Role check: VERIFIED requires QA role
+      if (status === 'VERIFIED' && user.role !== 'qa' && user.role !== 'admin' && user.role !== 'maintainer') {
+        return res.status(403).json({
+          error: `Only QA or Admin can transition a bug to VERIFIED. Current user: '${user.name}' (${user.role}).`,
+          code: 'QA_VERIFICATION_REQUIRED'
+        });
+      }
+
+      const validation = StateMachineService.validateTransition(
+        bug,
+        status,
+        resolution,
+        duplicateOfBugId
+      );
+
+      if (!validation.valid) {
+        return res.status(400).json({
+          error: validation.error,
+          allowedTransitions: VALID_STATUS_TRANSITIONS[bug.status],
+        });
+      }
+
+      const previousStatus = bug.status;
+      const previousResolution = bug.resolution;
+
+      const updated = store.updateBug(bug.id, {
+        status,
+        resolution: resolution !== undefined ? resolution : bug.resolution,
+        duplicateOfBugId: duplicateOfBugId !== undefined ? duplicateOfBugId : bug.duplicateOfBugId,
+        closedAt: status === 'CLOSED' ? new Date().toISOString() : undefined,
+      });
+
+      store.addAuditLog({
+        bugId: bug.id,
+        actorId: user.id,
+        actorName: user.name,
+        changes: [
+          { field: 'status', oldValue: previousStatus, newValue: status },
+          ...(resolution ? [{ field: 'resolution', oldValue: previousResolution, newValue: resolution }] : [])
+        ]
+      });
+
+      return res.json({
+        success: true,
+        data: updated,
+        transition: {
+          from: previousStatus,
+          to: status,
+          resolution,
+          actor: user.name,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Explicit Domain Command: POST /api/bugs/:id/assign
+  public static assignBug(req: Request, res: Response) {
+    try {
+      const bugId = String(req.params.id);
+      const bug = store.getBugById(bugId);
+      if (!bug) return res.status(404).json({ error: 'Bug not found' });
+
+      const { assigneeId } = req.body;
+      const user = req.currentUser || req.body._currentUser || store.getUsers()[0];
+
+      const assigneeUser = store.getUserById(assigneeId);
+      if (!assigneeUser) {
+        return res.status(400).json({ error: `Assignee user '${assigneeId}' not found.` });
+      }
+
+      const previousAssignee = bug.assigneeName;
+      const updated = store.updateBug(bug.id, {
+        assigneeId: assigneeUser.id,
+        assigneeName: assigneeUser.name,
+      });
+
+      store.addAuditLog({
+        bugId: bug.id,
+        actorId: user.id,
+        actorName: user.name,
+        changes: [
+          { field: 'assigneeName', oldValue: previousAssignee, newValue: assigneeUser.name }
+        ]
+      });
+
+      return res.json({
+        success: true,
+        data: updated,
+        assignedTo: assigneeUser.name
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Explicit Domain Command: POST /api/bugs/:id/set-security
+  public static setSecurity(req: Request, res: Response) {
+    try {
+      const bugId = String(req.params.id);
+      const bug = store.getBugById(bugId);
+      if (!bug) return res.status(404).json({ error: 'Bug not found' });
+
+      const { isSecuritySensitive } = req.body;
+      const user = req.currentUser || req.body._currentUser || store.getUsers()[0];
+
+      const previousValue = bug.isSecuritySensitive;
+      const updated = store.updateBug(bug.id, {
+        isSecuritySensitive: Boolean(isSecuritySensitive)
+      });
+
+      store.addAuditLog({
+        bugId: bug.id,
+        actorId: user.id,
+        actorName: user.name,
+        changes: [
+          { field: 'isSecuritySensitive', oldValue: previousValue, newValue: Boolean(isSecuritySensitive) }
+        ]
+      });
+
+      return res.json({
+        success: true,
+        data: updated,
+        isSecuritySensitive: Boolean(isSecuritySensitive)
+      });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }

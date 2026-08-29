@@ -223,6 +223,51 @@ export const BugDetailModal: React.FC = () => {
           </div>
         </div>
 
+        {/* Interactive Lifecycle Pipeline Header */}
+        <div className="px-6 py-2.5 bg-slate-950 border-b border-slate-800/80 flex items-center justify-between gap-4 overflow-x-auto select-none">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {[
+              { id: 'UNCONFIRMED', label: '1. Reported', role: 'Reporter' },
+              { id: 'NEW', label: '2. Triaged', role: 'Maintainer' },
+              { id: 'IN_PROGRESS', label: '3. In Progress', role: 'Developer' },
+              { id: 'IN_REVIEW', label: '4. Review', role: 'Reviewer' },
+              { id: 'RESOLVED', label: '5. Resolved', role: 'Dev / QA' },
+              { id: 'VERIFIED', label: '6. QA Verified', role: 'QA Lead' },
+              { id: 'CLOSED', label: '7. Closed', role: 'Release' },
+            ].map((stage, idx, arr) => {
+              const isCurrent = bug.status === stage.id;
+              const statusOrder = ['UNCONFIRMED', 'NEW', 'IN_PROGRESS', 'IN_REVIEW', 'RESOLVED', 'VERIFIED', 'CLOSED'];
+              const isPast = statusOrder.indexOf(bug.status) >= statusOrder.indexOf(stage.id);
+
+              return (
+                <React.Fragment key={stage.id}>
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
+                      isCurrent
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold shadow-xs'
+                        : isPast
+                        ? 'text-slate-400 bg-slate-900/80 border border-slate-800/80'
+                        : 'text-slate-600 border border-transparent'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isCurrent ? 'bg-emerald-400 animate-pulse' : isPast ? 'bg-slate-500' : 'bg-slate-800'}`} />
+                    <span>{stage.label}</span>
+                  </div>
+                  {idx < arr.length - 1 && (
+                    <span className="text-slate-700 text-xs font-mono">→</span>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[11px] font-mono text-slate-500 hidden md:inline">
+              Active Stage: <strong className="text-slate-200">{bug.status}</strong>
+            </span>
+          </div>
+        </div>
+
         {/* Content Layout: 2 Columns */}
         <div className="flex-1 flex min-h-0 divide-x divide-slate-800 overflow-hidden">
           {/* Left Column: Details, Diffs, Audit, Worklogs, Comments */}
@@ -302,51 +347,130 @@ export const BugDetailModal: React.FC = () => {
                     <div className="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed">
                       {bug.description}
                     </div>
-                  </div>
+                  </div>                  {/* Unified Activity Timeline (Linear / GitHub Style) */}
+                  <div className="space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold font-mono text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Unified Activity & Discussion Timeline</span>
+                      </h4>
+                      <span className="text-[11px] font-mono text-slate-500">
+                        {bug.comments.length} comments • {bug.workLogs.length} worklogs • {auditLogs.length} events
+                      </span>
+                    </div>
 
-                  {/* Comments Thread */}
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-wider">
-                      Activity & Conversation History
-                    </h4>
+                    {(() => {
+                      const timelineItems = [
+                        ...bug.comments.map((c, i) => ({
+                          id: c.id,
+                          type: 'comment' as const,
+                          timestamp: c.createdAt,
+                          actor: c.authorName,
+                          content: c.text,
+                          isInternal: c.isInternal,
+                          index: i + 1,
+                        })),
+                        ...bug.workLogs.map(w => ({
+                          id: w.id,
+                          type: 'worklog' as const,
+                          timestamp: w.loggedAt,
+                          actor: w.userName,
+                          content: `Logged +${w.hoursSpent}h session: ${w.comment}`,
+                          index: 0,
+                        })),
+                        ...auditLogs.filter(a => !a.commentId).map(a => ({
+                          id: a.id,
+                          type: 'audit' as const,
+                          timestamp: a.timestamp,
+                          actor: a.actorName,
+                          content: a.changes.map((c: any) => `${c.field} → ${String(c.newValue)}`).join(', '),
+                          index: 0,
+                        })),
+                      ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-                    {bug.comments.length === 0 ? (
-                      <EmptyState
-                        icon={MessageSquareDashed}
-                        title="No comments yet"
-                        description="Start the technical discussion or share reproduction notes below."
-                      />
-                    ) : (
-                      bug.comments.map((c, idx) => (
-                        <div
-                          key={c.id}
-                          className={`p-4 rounded-xl border shadow-xs ${
-                            c.isInternal
-                              ? 'bg-amber-950/15 border-amber-900/40 text-amber-200'
-                              : 'bg-slate-900/90 border-slate-800 text-slate-200'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="font-semibold text-emerald-400 font-sans">
-                                {c.authorName}
-                              </span>
-                              <span className="text-slate-500 font-mono text-[11px]">
-                                comment #{idx + 1} • {new Date(c.createdAt).toLocaleTimeString()}
-                              </span>
-                            </div>
-                            {c.isInternal && (
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                                Internal Note
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs font-mono whitespace-pre-wrap leading-relaxed">
-                            {c.text}
-                          </div>
+                      if (timelineItems.length === 0) {
+                        return (
+                          <EmptyState
+                            icon={MessageSquareDashed}
+                            title="No activity recorded yet"
+                            description="Start the technical discussion or share reproduction notes below."
+                          />
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-3">
+                          {timelineItems.map(item => {
+                            if (item.type === 'comment') {
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={`p-4 rounded-xl border shadow-xs transition-all ${
+                                    item.isInternal
+                                      ? 'bg-amber-950/20 border-amber-900/50 text-amber-200'
+                                      : 'bg-slate-900/90 border-slate-800 text-slate-200'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-[10px] font-bold text-emerald-300 font-mono">
+                                        {item.actor[0]}
+                                      </div>
+                                      <span className="font-semibold text-emerald-400 font-sans">
+                                        {item.actor}
+                                      </span>
+                                      <span className="text-slate-500 font-mono text-[11px]">
+                                        comment #{item.index} • {new Date(item.timestamp).toLocaleTimeString()}
+                                      </span>
+                                    </div>
+                                    {item.isInternal && (
+                                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                                        Internal Note
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs font-mono whitespace-pre-wrap leading-relaxed pl-7">
+                                    {item.content}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (item.type === 'worklog') {
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="p-3 bg-slate-950/80 rounded-xl border border-amber-500/20 flex items-center justify-between text-xs font-mono text-slate-300 gap-3"
+                                >
+                                  <div className="flex items-center gap-2.5">
+                                    <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                                    <span><strong className="text-slate-100">{item.actor}</strong> {item.content}</span>
+                                  </div>
+                                  <span className="text-slate-500 text-[10.5px] shrink-0">
+                                    {new Date(item.timestamp).toLocaleTimeString()}
+                                  </span>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div
+                                key={item.id}
+                                className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-850 flex items-center justify-between text-[11.5px] font-mono text-slate-400 gap-3"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Activity className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                  <span><strong className="text-slate-200">{item.actor}</strong> updated {item.content}</span>
+                                </div>
+                                <span className="text-slate-600 text-[10px] shrink-0">
+                                  {new Date(item.timestamp).toLocaleTimeString()}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))
-                    )}
+                      );
+                    })()}
                   </div>
 
                   {/* Comment Editor */}
