@@ -15,6 +15,7 @@ import { BugDetailModal } from './components/bug-detail/BugDetailModal.js';
 import { CreateBugModal } from './components/bug-create/CreateBugModal.js';
 import { ImportExportModal } from './components/common/ImportExportModal.js';
 import { ArchitectureModal } from './components/common/ArchitectureModal.js';
+import { GuidedTourBanner } from './components/layout/GuidedTourBanner.js';
 
 export const App: React.FC = () => {
   const {
@@ -49,6 +50,9 @@ export const App: React.FC = () => {
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden select-none font-sans">
       {/* Top Navigation */}
       <Navbar onOpenNotifications={() => setIsNotificationsOpen(true)} />
+
+      {/* Evaluator Guided Tour Banner */}
+      <GuidedTourBanner />
 
       {/* Main Workspace Layout */}
       <div className="flex-1 flex min-h-0 overflow-hidden">

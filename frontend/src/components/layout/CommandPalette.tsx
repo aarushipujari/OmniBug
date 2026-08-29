@@ -13,6 +13,8 @@ import {
   ArrowRight,
   Bug as BugIcon,
   DownloadCloud,
+  Cpu,
+  Terminal,
 } from 'lucide-react';
 
 export const CommandPalette: React.FC = () => {
@@ -24,6 +26,7 @@ export const CommandPalette: React.FC = () => {
     setActiveView,
     setIsCreateModalOpen,
     setIsImportExportOpen,
+    setIsArchitectureOpen,
     users,
     setCurrentUser,
     setSearchQuery,
@@ -45,6 +48,26 @@ export const CommandPalette: React.FC = () => {
 
   // Actions list
   const actions: { id: string; category: string; title: string; icon: React.ReactNode; run: () => void }[] = [
+    {
+      id: 'act-architecture-viva',
+      category: 'Documentation & Architecture',
+      title: 'Architecture & Engineering Specification (ERD, State Machine, Viva)',
+      icon: <Cpu className="w-4 h-4 text-emerald-400" />,
+      run: () => {
+        setIsCommandPaletteOpen(false);
+        setIsArchitectureOpen(true);
+      },
+    },
+    {
+      id: 'act-api-docs',
+      category: 'Documentation & Architecture',
+      title: 'REST API & OpenAPI 3.0 Endpoints Specification',
+      icon: <Terminal className="w-4 h-4 text-cyan-400" />,
+      run: () => {
+        setIsCommandPaletteOpen(false);
+        setIsArchitectureOpen(true);
+      },
+    },
     {
       id: 'act-sync-xml',
       category: 'Tools & Interop',

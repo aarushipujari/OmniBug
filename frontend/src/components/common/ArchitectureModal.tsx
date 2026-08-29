@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Database, GitGraph, Shield, BookOpen, Layers, Cpu, CheckCircle2, ChevronRight } from 'lucide-react';
+import { X, Database, GitGraph, Shield, BookOpen, Layers, Cpu, CheckCircle2, ChevronRight, Terminal } from 'lucide-react';
 
 interface ArchitectureModalProps {
   isOpen: boolean;
@@ -7,7 +7,7 @@ interface ArchitectureModalProps {
 }
 
 export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'schema' | 'statemachine' | 'graph' | 'viva'>('schema');
+  const [activeTab, setActiveTab] = useState<'schema' | 'statemachine' | 'graph' | 'viva' | 'api'>('schema');
 
   if (!isOpen) return null;
 
@@ -28,7 +28,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
                 OmniBug Architecture & Engineering Specification
               </h3>
               <p className="text-[11px] text-slate-400 font-mono">
-                System design, relational data models, graph algorithms & viva defense guide
+                System design, relational data models, graph algorithms, REST APIs & viva defense guide
               </p>
             </div>
           </div>
@@ -41,17 +41,18 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center px-6 border-b border-slate-800 bg-slate-900 text-xs font-sans">
+        <div className="flex items-center px-6 border-b border-slate-800 bg-slate-900 text-xs font-sans overflow-x-auto">
           {[
-            { id: 'schema', label: '1. Relational Entity Schema & ERD', icon: <Database className="w-3.5 h-3.5" /> },
+            { id: 'schema', label: '1. Relational Schema & ERD', icon: <Database className="w-3.5 h-3.5" /> },
             { id: 'statemachine', label: '2. Guarded State Machine', icon: <Shield className="w-3.5 h-3.5 text-indigo-400" /> },
             { id: 'graph', label: '3. Kahn\'s Graph Algorithm O(V+E)', icon: <GitGraph className="w-3.5 h-3.5 text-purple-400" /> },
-            { id: 'viva', label: '4. Examiner Viva Q&A Cheatsheet', icon: <BookOpen className="w-3.5 h-3.5 text-amber-400" /> },
+            { id: 'api', label: '4. REST API & OpenAPI Spec', icon: <Terminal className="w-3.5 h-3.5 text-cyan-400" /> },
+            { id: 'viva', label: '5. Examiner Viva Q&A Cheatsheet', icon: <BookOpen className="w-3.5 h-3.5 text-amber-400" /> },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`py-3 px-4 font-semibold border-b-2 transition-all flex items-center gap-2 ${
+              className={`py-3 px-4 font-semibold border-b-2 transition-all flex items-center gap-2 shrink-0 ${
                 activeTab === tab.id
                   ? 'border-emerald-400 text-emerald-300 bg-slate-850/50'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -189,7 +190,104 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
             </div>
           )}
 
-          {/* TAB 4: Viva Q&A */}
+          {/* TAB 4: REST API Specification */}
+          {activeTab === 'api' && (
+            <div className="space-y-4 font-mono">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 font-sans">
+                <div className="text-cyan-400 font-bold text-xs uppercase flex items-center gap-2 font-mono">
+                  <Terminal className="w-4 h-4" /> Enterprise REST API & OpenAPI 3.0 Endpoints
+                </div>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  OmniBug exposes an asynchronous, fully typed Express REST API with guarded state transitions and transactional persistence:
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  {
+                    method: 'GET',
+                    path: '/api/bugs',
+                    color: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
+                    desc: 'Query, filter, and paginate bugs across products, severities, and full-text keyword searches.',
+                    params: '?product=prod-1&severity=blocker&search=is:open&page=1&limit=25',
+                    response: '{ total: 7, data: [ Bug... ] }',
+                  },
+                  {
+                    method: 'POST',
+                    path: '/api/bugs',
+                    color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+                    desc: 'Create new defect report. Executes real-time duplicate similarity matching and records immutable audit log.',
+                    params: 'Payload: { title, description, productId, componentId, severity, priority, isSecuritySensitive }',
+                    response: '{ success: true, data: Bug }',
+                  },
+                  {
+                    method: 'PUT',
+                    path: '/api/bugs/:id',
+                    color: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
+                    desc: 'Mutate issue status or fields. Validates guarded state machine transitions and auto-resolves component/assignee.',
+                    params: 'Payload: { status: "NEW", componentId, severity, priority }',
+                    response: '{ success: true, data: Bug, transitionValid: true }',
+                  },
+                  {
+                    method: 'POST',
+                    path: '/api/bugs/:id/comments',
+                    color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+                    desc: 'Add comment with slash command execution (/resolve, /priority, /log, /flag) and burndown hour tracking.',
+                    params: 'Payload: { text: "/priority P1\n/log 3.5h Audited QUIC session bounds." }',
+                    response: '{ success: true, executedCommands: 2, comment: Comment }',
+                  },
+                  {
+                    method: 'POST',
+                    path: '/api/ai/triage',
+                    color: 'text-purple-400 border-purple-500/30 bg-purple-500/10',
+                    desc: 'Multi-language AST crash parser (Python, V8, Go, Rust, ASAN), culprit line extractor, and Jest test synthesizer.',
+                    params: 'Payload: { title, description, productId }',
+                    response: '{ suggestedSeverity, suggestedComponentId, parsedStackTrace, suggestedTestCase }',
+                  },
+                  {
+                    method: 'GET',
+                    path: '/api/graph',
+                    color: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10',
+                    desc: 'Computes Kahn’s topological sort levels, detects circular blocker deadlocks, and identifies the Critical Path.',
+                    params: 'None (Global dependency graph)',
+                    response: '{ nodes: [ ... ], edges: [ ... ], criticalPathBugIds: [ "bug-1002", "bug-1003" ], hasCycles: false }',
+                  },
+                  {
+                    method: 'GET',
+                    path: '/api/export/bugzilla-xml',
+                    color: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
+                    desc: 'Serializes entire database into Mozilla Bugzilla DTD-compliant XML with flags, comments, and blocker trees.',
+                    params: 'None (Returns Content-Type: application/xml)',
+                    response: '<?xml version="1.0" ?><!DOCTYPE bugzilla ...><bugzilla version="5.0.4">...</bugzilla>',
+                  },
+                  {
+                    method: 'POST',
+                    path: '/api/import/bugzilla-xml',
+                    color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+                    desc: 'Bidirectional XML parser and merger. Ingests legacy XML dumps with zero data loss.',
+                    params: 'Payload: { xml: "<bugzilla><bug>...</bug></bugzilla>" }',
+                    response: '{ success: true, importedCount: 1 }',
+                  },
+                ].map((ep, idx) => (
+                  <div key={idx} className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border font-mono ${ep.color}`}>
+                        {ep.method}
+                      </span>
+                      <span className="font-bold text-xs text-slate-200 font-mono">{ep.path}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 font-sans">{ep.desc}</p>
+                    <div className="p-2.5 bg-slate-900 rounded-lg text-[10.5px] font-mono text-slate-300 space-y-1 border border-slate-850">
+                      <div className="text-slate-400"><span className="text-emerald-400">Request:</span> {ep.params}</div>
+                      <div className="text-slate-400"><span className="text-cyan-400">Response:</span> {ep.response}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: Viva Q&A */}
           {activeTab === 'viva' && (
             <div className="space-y-3">
               {[

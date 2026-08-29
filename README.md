@@ -198,23 +198,22 @@ Given a directed graph $G = (V, E)$ where vertices $V$ represent bugs and direct
 
 ### Installation & Run
 
+## Quickstart & Local Setup
+
 ```bash
 # 1. Clone the repository
 git clone https://github.com/aarushipujari/OmniBug.git
 cd OmniBug
 
-# 2. Start Backend API Server (Port 4000)
-cd backend
-npm install
-npm run dev
+# 2. One-Command Setup (Installs backend & frontend dependencies)
+npm run setup
 
-# 3. In a separate terminal, start Frontend Dev Server (Port 5173)
-cd ../frontend
-npm install
+# 3. One-Command Dual Server Launch
 npm run dev
 ```
 
-Open **`http://localhost:5173`** in your browser.
+Open **`http://localhost:5173`** in your browser.  
+*(Or start independently: `npm run dev` inside `/backend` on port 4000 and `/frontend` on port 5173).*
 
 ---
 
