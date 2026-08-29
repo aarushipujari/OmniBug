@@ -61,12 +61,67 @@ export const api = {
   async updateBug(id: string, updates: Partial<Bug>, currentUser: User): Promise<Bug> {
     const res = await fetch(`${API_BASE}/bugs/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Persona-Id': currentUser.id,
+      },
       body: JSON.stringify({ ...updates, _currentUser: currentUser }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Failed to update bug');
     return json.data;
+  },
+
+  // Explicit Domain Commands
+  async transitionBug(id: string, status: string, resolution?: string | null, duplicateOfBugId?: string, currentUser?: User): Promise<Bug> {
+    const res = await fetch(`${API_BASE}/bugs/${id}/transition`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(currentUser ? { 'X-Demo-Persona-Id': currentUser.id } : {}),
+      },
+      body: JSON.stringify({ status, resolution, duplicateOfBugId, _currentUser: currentUser }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to transition bug');
+    return json.data;
+  },
+
+  async assignBug(id: string, assigneeId: string, currentUser?: User): Promise<Bug> {
+    const res = await fetch(`${API_BASE}/bugs/${id}/assign`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(currentUser ? { 'X-Demo-Persona-Id': currentUser.id } : {}),
+      },
+      body: JSON.stringify({ assigneeId, _currentUser: currentUser }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to assign bug');
+    return json.data;
+  },
+
+  async setSecurity(id: string, isSecuritySensitive: boolean, currentUser?: User): Promise<Bug> {
+    const res = await fetch(`${API_BASE}/bugs/${id}/set-security`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(currentUser ? { 'X-Demo-Persona-Id': currentUser.id } : {}),
+      },
+      body: JSON.stringify({ isSecuritySensitive, _currentUser: currentUser }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to set security sensitivity');
+    return json.data;
+  },
+
+  async getAuthToken(userId: string): Promise<{ token: string; user: User }> {
+    const res = await fetch(`${API_BASE}/auth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    return await res.json();
   },
 
   async bulkUpdate(bugIds: string[], updates: Partial<Bug>, currentUser: User): Promise<number> {

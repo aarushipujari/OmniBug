@@ -171,6 +171,7 @@ export interface Bug {
   attachments: Attachment[];
   comments: Comment[];
   gitLinkage?: GitLinkage;
+  lockVersion?: number;
   createdAt: string;
   updatedAt: string;
   closedAt?: string;

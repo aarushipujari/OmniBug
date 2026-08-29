@@ -6,24 +6,42 @@ import { AnalyticsController } from '../controllers/analyticsController.js';
 import { AIController } from '../controllers/aiController.js';
 import { store } from '../data/store.js';
 import { DependencyGraphService } from '../services/dependencyGraph.js';
-import { resolveCurrentUser, requireRole, requireCapability } from '../middleware/auth.js';
+import { resolveCurrentUser, requireRole, requireCapability, generateSessionToken } from '../middleware/auth.js';
+import { validateBugCreate, validateTransition, validateComment, validateWorkLog } from '../middleware/validation.js';
 
 const router = Router();
 
 // Global user session resolver
 router.use(resolveCurrentUser);
 
-// Auth & Users
+// Auth & Session tokens
 router.get('/auth/me', (req, res) => {
   const user = req.currentUser || store.getUsers()[0];
   res.json({
     data: user,
+    authMode: req.authMode || 'demo_persona_simulation',
+    token: generateSessionToken(user.id),
     capabilities: {
       canResetStore: user.role === 'admin' || user.role === 'maintainer',
       canVerifyBugs: user.role === 'qa' || user.role === 'admin' || user.role === 'maintainer',
       canManageSecurity: user.role === 'admin' || user.role === 'maintainer' || user.name.includes('Security'),
       canTriage: user.role !== 'reporter',
     }
+  });
+});
+
+router.post('/auth/token', (req, res) => {
+  const { userId } = req.body;
+  const user = store.getUserById(userId || 'usr-1');
+  if (!user) {
+    return res.status(404).json({ error: 'User persona not found' });
+  }
+  const token = generateSessionToken(user.id);
+  res.json({
+    token,
+    user,
+    expiresIn: '24h',
+    authScheme: 'Bearer HMAC-SHA256'
   });
 });
 
@@ -47,16 +65,16 @@ router.post('/products/:id/milestones', requireRole(['admin', 'maintainer']), Pr
 // Bugs CRUD & Actions
 router.get('/bugs', BugController.getBugs);
 router.get('/bugs/:id', BugController.getBugById);
-router.post('/bugs', BugController.createBug);
+router.post('/bugs', validateBugCreate, BugController.createBug);
 router.patch('/bugs/:id', BugController.updateBug);
 router.post('/bugs/bulk', BugController.bulkUpdate);
 
 // Explicit Domain Commands
-router.post('/bugs/:id/transition', BugController.transitionBug);
+router.post('/bugs/:id/transition', validateTransition, BugController.transitionBug);
 router.post('/bugs/:id/assign', BugController.assignBug);
 router.post('/bugs/:id/set-security', requireCapability('security_override'), BugController.setSecurity);
-router.post('/bugs/:id/comments', BugController.addComment);
-router.post('/bugs/:id/worklogs', BugController.addWorkLog);
+router.post('/bugs/:id/comments', validateComment, BugController.addComment);
+router.post('/bugs/:id/worklogs', validateWorkLog, BugController.addWorkLog);
 router.post('/bugs/:id/vote', BugController.toggleVote);
 
 // Flags

@@ -185,6 +185,8 @@ export interface Bug {
   
   gitLinkage?: GitLinkage;
   
+  lockVersion?: number; // Optimistic concurrency lock
+  
   createdAt: string;
   updatedAt: string;
   closedAt?: string;

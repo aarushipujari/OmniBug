@@ -267,7 +267,38 @@ export class BugController {
       }
 
       const updates = req.body;
-      const user = req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser || req.body._currentUser || store.getUsers()[0];
+
+      // Optimistic concurrency control check
+      if (updates.lockVersion !== undefined && currentBug.lockVersion !== undefined && Number(updates.lockVersion) !== currentBug.lockVersion) {
+        return res.status(409).json({
+          error: `Conflict: Issue #${currentBug.bugNumber} was modified concurrently (Client version: ${updates.lockVersion}, Server version: ${currentBug.lockVersion}). Refresh and retry.`,
+          code: 'OPTIMISTIC_LOCK_CONFLICT',
+          currentVersion: currentBug.lockVersion,
+        });
+      }
+
+      // Security sensitivity capability check
+      if (updates.isSecuritySensitive !== undefined && updates.isSecuritySensitive !== currentBug.isSecuritySensitive) {
+        const canOverrideSec = user.role === 'admin' || user.role === 'maintainer' || user.name.includes('Security');
+        if (!canOverrideSec) {
+          return res.status(403).json({
+            error: `Forbidden: Only Security Leads or Admins can toggle security confidentiality. Current role: '${user.role}' (${user.name}).`,
+            code: 'SECURITY_OVERRIDE_FORBIDDEN',
+          });
+        }
+      }
+
+      // QA verification capability check
+      if (updates.status === 'VERIFIED' && currentBug.status !== 'VERIFIED') {
+        const canVerify = user.role === 'qa' || user.role === 'admin' || user.role === 'maintainer';
+        if (!canVerify) {
+          return res.status(403).json({
+            error: `Forbidden: Only QA Leads or Admins can mark an issue as VERIFIED. Current role: '${user.role}' (${user.name}).`,
+            code: 'QA_VERIFY_REQUIRED',
+          });
+        }
+      }
 
       // Lifecycle validation if status or resolution is changing
       if (updates.status || updates.resolution !== undefined) {

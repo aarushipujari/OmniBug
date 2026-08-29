@@ -125,6 +125,7 @@ class Store {
       workLogs: bugData.workLogs || [],
       attachments: bugData.attachments || [],
       comments: bugData.comments || [],
+      lockVersion: 1,
     };
 
     this.data.nextBugNumber++;
@@ -158,10 +159,12 @@ class Store {
 
     const oldBug = this.data.bugs[index];
     const now = new Date().toISOString();
+    const currentVersion = oldBug.lockVersion || 1;
 
     const updatedBug: Bug = {
       ...oldBug,
       ...updates,
+      lockVersion: currentVersion + 1,
       updatedAt: now,
     };
 

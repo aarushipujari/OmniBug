@@ -4,6 +4,7 @@ import { DependencyGraphService } from '../services/dependencyGraph.js';
 import { AITriageService } from '../services/aiTriage.js';
 import { BugzillaExportImportService } from '../services/bugzillaExportImport.js';
 import { SlashCommandService } from '../services/slashCommands.js';
+import { generateSessionToken, verifySessionToken } from '../middleware/auth.js';
 import { Bug } from '../types/index.js';
 
 let passed = 0;
@@ -182,6 +183,21 @@ IndexError: Buffer overflow in AST walker`;
   assert(updatedAssigned.assigneeName === developerUser.name, 'Explicit domain assignment succeeded');
   const auditLogs = store.getAuditLogs('bug-1002');
   assert(auditLogs.some(l => l.changes.some(c => c.field === 'assigneeName' && c.newValue === developerUser.name)), 'Domain assignment produced immutable audit trail');
+
+  // Cryptographic HMAC Session Token Security Tests
+  const signedToken = generateSessionToken(adminUser.id);
+  assert(typeof signedToken === 'string' && signedToken.length > 20, 'Cryptographic HMAC session token generated');
+  const verifiedUserId = verifySessionToken(signedToken);
+  assert(verifiedUserId === adminUser.id, 'HMAC session token successfully verified and extracted identity');
+  const tamperedToken = signedToken + 'invalid_signature_tamper';
+  const rejectedTamper = verifySessionToken(tamperedToken);
+  assert(rejectedTamper === null, 'Tampered HMAC session token strictly rejected');
+
+  // Optimistic Concurrency Locking Tests
+  const bugBeforeConcurrency = store.getBugById('bug-1003')!;
+  const initialVersion = bugBeforeConcurrency.lockVersion || 1;
+  const bugAfterConcurrency = store.updateBug('bug-1003', { title: 'Updated SIMD Vectorization title' });
+  assert(Boolean(bugAfterConcurrency && (bugAfterConcurrency.lockVersion || 1) > initialVersion), 'Optimistic concurrency lockVersion auto-increments on mutation');
 
   // Test Summary
   console.log('\n========================================');

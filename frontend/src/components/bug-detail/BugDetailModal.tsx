@@ -90,7 +90,7 @@ export const BugDetailModal: React.FC = () => {
         if (!resolution) resolution = 'FIXED';
       }
 
-      const updated = await api.updateBug(bug.id, { status: newStatus, resolution, duplicateOfBugId: dupId }, currentUser);
+      const updated = await api.transitionBug(bug.id, newStatus, resolution, dupId, currentUser);
       setBug(updated);
       toast('Status Changed', `Transitioned to ${newStatus}`, 'success');
       await refreshData();
