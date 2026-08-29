@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext.js';
-import { BugSeverity, BugPriority, DuplicateCandidate } from '../../types/index.js';
+import { BugSeverity, BugPriority, DuplicateCandidate, TriagePrediction, ParsedStackTrace } from '../../types/index.js';
 import { api } from '../../services/api.js';
 import {
   X,
@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   RefreshCw,
   HelpCircle,
+  Zap,
 } from 'lucide-react';
 
 export const CreateBugModal: React.FC = () => {
@@ -46,6 +47,8 @@ export const CreateBugModal: React.FC = () => {
   const [duplicateCandidates, setDuplicateCandidates] = useState<DuplicateCandidate[]>([]);
   const [isSearchingDups, setIsSearchingDups] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzedPrediction, setAnalyzedPrediction] = useState<TriagePrediction | null>(null);
 
   // Sync selected product components
   const selectedProduct = products.find(p => p.id === productId) || products[0];
@@ -100,8 +103,10 @@ export const CreateBugModal: React.FC = () => {
       return;
     }
 
+    setIsAnalyzing(true);
     try {
       const prediction = await api.analyzeAndTriage(title, description, productId);
+      setAnalyzedPrediction(prediction);
       if (prediction.suggestedSeverity) setSeverity(prediction.suggestedSeverity);
       if (prediction.suggestedPriority) setPriority(prediction.suggestedPriority);
       if (prediction.isSecuritySensitive) setIsSecuritySensitive(true);
@@ -116,6 +121,8 @@ export const CreateBugModal: React.FC = () => {
       );
     } catch (e: any) {
       toast('Analysis Error', e.message, 'alert');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -277,6 +284,35 @@ export const CreateBugModal: React.FC = () => {
               placeholder="Describe reproduction steps, expected vs actual behavior, and paste any GDB/ASAN/stack trace logs..."
               className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500/60"
             />
+
+            {/* Parsed Stack Trace & Root Cause Preview Card */}
+            {analyzedPrediction?.parsedStackTrace && (
+              <div className="mt-2.5 p-3.5 bg-slate-950 rounded-xl border border-cyan-500/40 space-y-2 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5 font-mono">
+                    ⚡ Parsed {analyzedPrediction.parsedStackTrace.detectedLanguage} Traceback
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 font-mono border border-cyan-500/30">
+                    {analyzedPrediction.parsedStackTrace.errorType}
+                  </span>
+                </div>
+                <div className="text-xs font-mono text-slate-300 bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                  <div className="text-rose-400 font-bold mb-1">{analyzedPrediction.parsedStackTrace.errorMessage}</div>
+                  {analyzedPrediction.parsedStackTrace.culpritFile && (
+                    <div className="text-[11px] text-slate-400">
+                      Culprit: <span className="text-emerald-400 font-bold">{analyzedPrediction.parsedStackTrace.culpritFile}</span>
+                      {analyzedPrediction.parsedStackTrace.culpritLine ? ` (Line ${analyzedPrediction.parsedStackTrace.culpritLine})` : ''}
+                    </div>
+                  )}
+                </div>
+                {analyzedPrediction.rootCauseAnalysis && (
+                  <div className="text-[11px] text-slate-300 font-sans leading-relaxed pt-0.5">
+                    <span className="text-slate-400 font-semibold">Root Cause: </span>
+                    {analyzedPrediction.rootCauseAnalysis}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Product, Component, Version, Milestone */}
