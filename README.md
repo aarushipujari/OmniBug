@@ -7,7 +7,7 @@
 [![Typecheck](https://img.shields.io/badge/tsc-0%20errors-16a34a.svg)]()
 [![Architecture](https://img.shields.io/badge/Stack-React%2018%20%2B%20Express%20REST-0284c7.svg)]()
 
-File a crash traceback, inspect unified patch diffs side-by-side, request peer review flags, and visualize blocker critical paths across multi-tiered software architectures. OmniBug preserves Bugzilla's core strengths—hierarchical domain models (*Products ➔ Components ➔ Milestones*), guarded state machines, and fine-grained reviewer flags—while modernizing the developer experience: the client keeps its state in memory so filtering and navigation do not round-trip, triage is deterministic and runs offline, and the keyboard reaches everything.
+File a crash traceback, inspect unified patch diffs side-by-side, request peer review flags, and visualize blocker critical paths across multi-tiered software architectures. OmniBug preserves Bugzilla's battle-tested enterprise rigor—hierarchical domain models (*Products ➔ Components ➔ Milestones*), guarded state machines, and fine-grained reviewer flags—while modernizing the developer experience: client state is held in memory for responsive client-side state reactivity, triage is deterministic and runs offline, and terminal-grade keyboard shortcuts reach every core workflow.
 
 Built for **Track 2: Developer Tool Reconstruction — Bugzilla**.
 
@@ -78,28 +78,20 @@ Legacy Bugzilla lists blocker IDs as static comma-separated text numbers. OmniBu
 - Automatically calculates and renders the **Critical Path** (highlighted in red) to show engineering leads the exact chain of unresolved blockers preventing a release milestone.
 - Employs real-time cycle detection to prevent circular blocker deadlocks.
 
-### 2. Multi-Language Crash Traceback Parser
-Engineers frequently copy-paste raw terminal logs into bug reports. OmniBug includes an intelligent traceback parser supporting:
+### 2. Multi-Language Regex/Pattern Crash Traceback Parser
+Engineers frequently copy-paste raw terminal logs into bug reports. OmniBug includes an intelligent traceback pattern parser supporting:
 - **Python** tracebacks (`File "...", line ..., in ...`)
 - **JavaScript / TypeScript / V8** error traces (`at function (file:line:col)`)
 - **Go** panics (`goroutine [running] / file.go:line`)
 - **Rust** panics (`thread panicked at '...', file.rs:line`)
 - **C/C++ AddressSanitizer (ASAN) & GDB** memory dumps
 
-The parser extracts the deepest application culprit frame, extracts line numbers, matches file paths to system components, and synthesizes automated Jest/Mocha reproduction test templates.
+The parser identifies application stack frames, extracts culprit file paths and line numbers, routes tickets to corresponding system components, and synthesizes automated BDD unit test reproduction templates (`describe`/`it`/`expect`).
 
-The synthesized reproduction test is executable, not a template. It asserts
-against the triage output itself — the culprit file and line the parser
-extracted, the classified error type, the presence of application frames, and
-the routed component and severity — so running it genuinely passes or fails.
-Execution happens on the server in a fresh `node:vm` context that contains only
-`describe`, `it`, `expect` and a frozen copy of the fixture: no `require`, no
-`process`, no filesystem, no network, and a 1000ms interrupt for a snippet that
-does not terminate. The client sends the bug text rather than the test source,
-so the sandbox only ever runs code this server generated.
+The synthesized reproduction test is executable, not a static template. It asserts against the triage output itself — the culprit file and line the parser extracted, the classified error type, the presence of application frames, and the routed component and severity — so running it genuinely passes or fails. Execution happens on the server in a fresh `node:vm` context that contains only `describe`, `it`, `expect` and a frozen copy of the fixture: no `require`, no `process`, no filesystem, no network, and a 1000ms interrupt for a snippet that does not terminate. The client sends the bug text rather than the test source, so the sandbox only ever runs code this server generated.
 
-### 3. Live NLP Token Similarity Duplicate Prevention
-Duplicate bugs waste hundreds of developer triage hours. As a reporter types a title and description, OmniBug lowercases the input, strips punctuation, drops tokens of two characters or fewer, and scores the resulting token set against every open and closed ticket with Jaccard similarity (overlap divided by union). Title and full-text scores are weighted equally and anything at or above 0.18 is surfaced. A live warning drawer alerts the reporter with match percentage scores and one-click side-by-side comparison before redundant tickets are submitted.
+### 3. Live Token Similarity Duplicate Prevention
+Duplicate bugs waste hundreds of developer triage hours. As a reporter types a title and description, OmniBug lowercases the input, strips punctuation, drops tokens of two characters or fewer, and computes tokenized Jaccard set similarity (intersection divided by union) with equal title and full-text weighting against all open and closed tickets in the database. Anything with similarity $\ge 0.18$ is surfaced in a live warning drawer with match percentage scores and one-click candidate inspection before redundant tickets are submitted.
 
 ### 4. Discussion Slash Command Automation Engine
 Developers can triage and update issues directly from comment boxes without clicking through forms:
@@ -109,9 +101,9 @@ Developers can triage and update issues directly from comment boxes without clic
 - `/flag review? @Alex` &mdash; requests peer code review.
 - `/log 2.5h Tested buffer bounds fix` &mdash; decrements remaining estimates and logs work sessions.
 
-### 5. Splinter Patch Diff Viewer & Bugzilla XML DTD Sync
+### 5. Splinter Patch Diff Viewer & Bugzilla XML Interoperability
 - **Splinter Split Diff**: Renders unified git patches with syntax highlighting and 2-column side-by-side diffing (base deletions on the left, proposed patch additions on the right).
-- **Bugzilla XML Sync**: Exports the complete system state to standard `<bugzilla>` XML DTD or imports legacy Bugzilla XML dumps for zero-loss server migration.
+- **Bugzilla XML Sync**: Exports the complete system state to standard `<bugzilla>` XML DTD or imports legacy Bugzilla XML dumps for Bugzilla-compatible XML import/export and data interchange.
 
 ---
 
@@ -119,9 +111,9 @@ Developers can triage and update issues directly from comment boxes without clic
 
 | Dimension | Legacy Bugzilla (Perl CGI) | OmniBug (Modern Reconstruction) |
 | :--- | :--- | :--- |
-| **Architecture** | Heavy Perl CGI scripts, full page reload on every comment, lock contention | Decoupled React 18 SPA + Express REST API; client state is held in memory, so filtering and view changes do not reload the page |
+| **Architecture** | Heavy Perl CGI scripts, full page reload on every comment, lock contention | Decoupled React 18 SPA + Express REST API with responsive in-memory client-side state (no page reloads for filtering or navigation) |
 | **Triage & Ergonomics** | Multi-screen form clicking, slow manual categorization | **Speed Triage Workspace** with keyboard hotkeys (<kbd>J</kbd>/<kbd>K</kbd>/<kbd>C</kbd>/<kbd>I</kbd>/<kbd>E</kbd>/<kbd>1-5</kbd>) |
-| **Duplicate Prevention** | Reactive duplicate search *after* filing | **Live Proactive NLP Similarity** alerting reporters *as they type* |
+| **Duplicate Prevention** | Reactive duplicate search *after* filing | **Live Proactive Token Similarity** alerting reporters *as they type* |
 | **Crash / Stack Traces** | Unformatted plain text blobs | **Multi-Language Parser** auto-extracting culprit file/line and component routing |
 | **Blockers & Dependencies** | Flat text ID lists with zero spatial insight | **Interactive SVG Blocker DAG** with Kahn's topological levels and red Critical Path |
 | **Review & Flags Workflow** | Cryptic dropdowns with `?`, `+`, `-` syntax | Modern **Flag Manager** for `review?`, `needinfo?`, `qa-verify?`, `security-audit?` |
@@ -152,7 +144,7 @@ Developers can triage and update issues directly from comment boxes without clic
  │  │ State Machine Engine  │ Kahn's DAG & Critical   │ Slash Command Engine &    │  │
  │  │ (Guarded Transitions) │ Path Topology Engine    │ Micro-Audit Trail Logger  │  │
  │  ├───────────────────────┼─────────────────────────┼───────────────────────────┤  │
- │  │ Multi-Language Stack  │ NLP Token Similarity &  │ Bugzilla XML DTD Serializer│ │
+ │  │ Multi-Language Stack  │ Token Similarity &      │ Bugzilla XML DTD Serializer│ │
  │  │ Trace & Crash Parser  │ Duplicate Detector      │ and Import Parser         │  │
  │  └───────────────────────┴─────────────────────────┴───────────────────────────┘  │
  └────────────────────────────────────────┬─────────────────────────────────────────┘
@@ -190,13 +182,16 @@ Given a directed graph $G = (V, E)$ where vertices $V$ represent bugs and direct
 ## Interface, Ergonomics & Personas
 
 - **Active Persona Switcher**: Simulate permissions and reviewer queues as **Alex Rivera** *(Lead Architect)*, **Elena Rostova** *(Security Lead)*, **Sarah Jenkins** *(QA Lead)*, **Marcus Chen** *(Core Engine)*, or **David Kim** *(Frontend)*.
-- **Maintainer Triage Hotkeys**:
-  - <kbd>J</kbd> / <kbd>K</kbd>: Navigate through the triage queue
-  - <kbd>C</kbd>: Confirm bug into `NEW`
-  - <kbd>I</kbd>: Move to `IN_PROGRESS`
+- **Global Shortcuts**:
+  - <kbd>C</kbd> *(outside Speed Triage)*: Open **+ New Bug** modal
+  - <kbd>Ctrl+K</kbd> / <kbd>⌘K</kbd>: Open **Command Palette**
+  - <kbd>Escape</kbd>: Close any active modal
+- **Speed Triage Keyboard Shortcuts**:
+  - <kbd>J</kbd> / <kbd>K</kbd> *(or <kbd>↓</kbd>/<kbd>↑</kbd>)*: Navigate triage inbox list
+  - <kbd>C</kbd>: **Confirm as Bug** (transitions `UNCONFIRMED` ➔ `NEW`)
+  - <kbd>I</kbd>: **Investigate** (transitions to `IN_PROGRESS` and assigns to active persona)
   - <kbd>E</kbd>: Quick resolve as `FIXED`
   - <kbd>1</kbd> &ndash; <kbd>5</kbd>: Quick set Priority (`P1` &ndash; `P5`)
-- **Global Command Palette**: Press <kbd>Ctrl+K</kbd> / <kbd>⌘K</kbd> to search issues, switch views, or trigger actions from anywhere.
 
 ---
 
@@ -259,7 +254,7 @@ Rather than delegating defect triage to opaque third-party cloud LLM APIs, OmniB
 | **Traceback parser & blocker DAG** | Multi-language crash parser (Python, V8, Go, Rust, ASAN), live duplicate detection, Kahn's-algorithm critical-path DAG engine, and reproduction-test synthesis. | Traceback and DAG critical-path assertions |
 | **Security, RBAC & Mutation Isolation** | scrypt password verification, expiring HMAC-SHA256 session tokens (`POST /api/auth/login`), field allowlisting on updates, capability gates (`security_override`, `verify_bug`), explicit domain commands (`/transition`, `/assign`, `/set-security`), and optimistic concurrency locks (`lockVersion`). | HTTP-level authentication, authorisation, validation and concurrency assertions |
 | **Ergonomics & Studio UI** | Linear/shadcn-inspired interface with dark mode, persistent visual lifecycle stepper, unified chronological activity timeline, and comprehensive keyboard accessibility (<kbd>Ctrl+K</kbd>, <kbd>C</kbd>, <kbd>J</kbd>/<kbd>K</kbd>, <kbd>Esc</kbd>). | Verified across React 18 component hierarchy |
-| **Single-Command Reliability** | 44/44 passing automated backend tests, single-command launcher (`npm run dev`), Docker deployment (`docker compose up`), and verification (`npm run check`). | `npm run check` compiles cleanly with 0 errors |
+| **Single-Command Reliability** | 84/84 passing automated backend tests, single-command launcher (`npm run dev`), Docker deployment (`docker compose up`), and verification (`npm run check`). | `npm run check` compiles cleanly with 0 errors |
 
 ---
 
@@ -423,7 +418,7 @@ omnibug/
 │   │   │   └── stateMachine.ts         # Guarded Bugzilla lifecycle validator
 │   │   ├── types/               # TypeScript domain models and schemas
 │   │   ├── server.ts            # Express server initialization (Port 4000)
-│   │   └── tests/               # Automated test runner (35/35 passing unit & integration tests)
+│   │   └── tests/               # Automated test runner (84/84 passing unit & integration tests)
 │   ├── data-storage/            # Atomic JSON disk persistence store
 │   ├── package.json
 │   └── tsconfig.json
@@ -432,7 +427,7 @@ omnibug/
 │   │   ├── components/
 │   │   │   ├── bug-create/      # CreateBugModal with AI auto-analysis & duplicate warning
 │   │   │   ├── bug-detail/      # BugDetailModal (Split Diffs, Flags, Slash Commands, Audit Trail)
-│   │   │   ├── common/          # DiffViewer, ArchitectureModal, ImportExportModal, StatusBadge
+│   │   │   ├── common/          # DiffViewer, ArchitectureModal, ImportExportModal, StatusBadge, ToastContainer
 │   │   │   ├── layout/          # Navbar (Persona Switcher), Sidebar, CommandPalette, Drawer
 │   │   │   └── views/           # TableView, KanbanView, GraphView, TriageView, MilestoneView, AnalyticsView
 │   │   ├── context/             # AppContext (Global state, active persona, notifications)
@@ -450,4 +445,4 @@ omnibug/
 ---
 
 ## 📄 License
-MIT License. Built for Track 2: Developer Tool Reconstruction &mdash; Bugzilla.
+MIT License. Built for Track 2: Developer Tool Reconstruction — Bugzilla.
