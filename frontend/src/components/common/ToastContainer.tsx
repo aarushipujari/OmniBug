@@ -10,26 +10,26 @@ export const ToastContainer: React.FC = () => {
   const getIcon = (type: ToastNotification['type']) => {
     switch (type) {
       case 'success':
-        return <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />;
+        return <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />;
       case 'alert':
-        return <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />;
+        return <ShieldAlert className="w-4 h-4 text-red-600 shrink-0" />;
       case 'warning':
-        return <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />;
+        return <AlertTriangle className="w-4 h-4 text-slate-700 shrink-0" />;
       default:
-        return <Info className="w-4 h-4 text-sky-400 shrink-0" />;
+        return <Info className="w-4 h-4 text-slate-700 shrink-0" />;
     }
   };
 
   const getBorderColor = (type: ToastNotification['type']) => {
     switch (type) {
       case 'success':
-        return 'border-emerald-500/40 bg-slate-900/95 shadow-emerald-950/30';
+        return 'border-emerald-200 bg-white shadow-lg text-slate-900';
       case 'alert':
-        return 'border-rose-500/40 bg-slate-900/95 shadow-rose-950/30';
+        return 'border-red-200 bg-white shadow-lg text-slate-900';
       case 'warning':
-        return 'border-amber-500/40 bg-slate-900/95 shadow-amber-950/30';
+        return 'border-slate-300 bg-white shadow-lg text-slate-900';
       default:
-        return 'border-sky-500/40 bg-slate-900/95 shadow-sky-950/30';
+        return 'border-slate-200 bg-white shadow-lg text-slate-900';
     }
   };
 
@@ -47,18 +47,18 @@ export const ToastContainer: React.FC = () => {
         >
           <div className="mt-0.5">{getIcon(toast.type)}</div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-xs text-slate-100 font-sans leading-tight">
+            <div className="font-semibold text-xs text-slate-900 font-sans leading-tight">
               {toast.title}
             </div>
             {toast.message && (
-              <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed line-clamp-2 font-normal font-sans">
+              <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed line-clamp-2 font-normal font-sans">
                 {toast.message}
               </p>
             )}
           </div>
           <button
             onClick={() => dismissToast(toast.id)}
-            className="text-slate-400 hover:text-slate-200 p-0.5 rounded transition-colors"
+            className="text-slate-400 hover:text-slate-700 p-0.5 rounded transition-colors"
             aria-label="Dismiss toast"
           >
             <X className="w-3.5 h-3.5" />

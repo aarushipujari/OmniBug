@@ -221,24 +221,17 @@ export const CommandPalette: React.FC = () => {
       aria-modal="true"
       aria-label="Command Palette Quick Launcher"
     >
-      {/*
-        The backdrop is a button rather than a div with an onClick. As a div it
-        was reachable only with a pointer, and the dismissal it offered did not
-        exist for anyone navigating by keyboard. Escape closes the palette too;
-        this element is hidden from assistive technology so it does not announce
-        a second, redundant control.
-      */}
       <button
         type="button"
         tabIndex={-1}
         aria-hidden="true"
         onClick={() => setIsCommandPaletteOpen(false)}
-        className="absolute inset-0 w-full h-full bg-black/75 backdrop-blur-xs cursor-default"
+        className="absolute inset-0 w-full h-full bg-slate-900/40 backdrop-blur-xs cursor-default"
       />
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Search Header */}
-        <div className="px-4 py-3 border-b border-slate-800 flex items-center gap-3 bg-slate-850">
-          <Search className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-3 bg-slate-50">
+          <Search className="w-4 h-4 text-slate-700 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -250,9 +243,9 @@ export const CommandPalette: React.FC = () => {
             onKeyDown={handleKeyDown}
             aria-label="Search commands, issues, and personas"
             placeholder="Type a command, issue #, keyword or persona..."
-            className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none font-mono"
+            className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none font-mono"
           />
-          <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono" aria-label="Escape key to close">
+          <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-white text-slate-500 border border-slate-200 font-mono shadow-xs" aria-label="Escape key to close">
             ESC
           </kbd>
         </div>
@@ -260,7 +253,7 @@ export const CommandPalette: React.FC = () => {
         {/* Results List */}
         <div className="max-h-80 overflow-y-auto p-2 space-y-1">
           {filteredItems.length === 0 ? (
-            <div className="px-4 py-8 text-center text-xs text-slate-400">
+            <div className="px-4 py-8 text-center text-xs text-slate-500">
               No matching commands or issues found for "{query}"
             </div>
           ) : (
@@ -273,20 +266,20 @@ export const CommandPalette: React.FC = () => {
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between transition-colors ${
                     isSelected
-                      ? 'bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-500/30'
-                      : 'text-slate-300 hover:bg-slate-800'
+                      ? 'bg-slate-100 text-slate-900 font-medium border border-slate-200 shadow-xs'
+                      : 'text-slate-700 hover:bg-slate-50 border border-transparent'
                   }`}
                 >
                   <div className="flex items-center gap-3 truncate">
                     {item.icon}
                     <div className="truncate">
-                      <span className="text-[10px] uppercase font-mono text-slate-400 mr-2">
+                      <span className="text-[10px] uppercase font-mono text-slate-500 mr-2">
                         [{item.category}]
                       </span>
-                      <span>{item.title}</span>
+                      <span className="text-slate-900">{item.title}</span>
                     </div>
                   </div>
-                  {isSelected && <ArrowRight className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                  {isSelected && <ArrowRight className="w-3.5 h-3.5 text-slate-900 shrink-0" />}
                 </button>
               );
             })
@@ -294,10 +287,10 @@ export const CommandPalette: React.FC = () => {
         </div>
 
         {/* Footer shortcuts */}
-        <div className="px-4 py-2 border-t border-slate-800/80 bg-slate-950/60 text-[11px] text-slate-400 flex items-center justify-between font-mono">
+        <div className="px-4 py-2 border-t border-slate-200 bg-slate-50 text-[11px] text-slate-500 flex items-center justify-between font-mono">
           <div className="flex items-center gap-3">
-            <span><kbd className="bg-slate-800 px-1 rounded">↑↓</kbd> to navigate</span>
-            <span><kbd className="bg-slate-800 px-1 rounded">↵</kbd> to select</span>
+            <span><kbd className="bg-white border border-slate-200 px-1 rounded shadow-xs">↑↓</kbd> to navigate</span>
+            <span><kbd className="bg-white border border-slate-200 px-1 rounded shadow-xs">↵</kbd> to select</span>
           </div>
           <span>OmniBug Quick Launcher</span>
         </div>

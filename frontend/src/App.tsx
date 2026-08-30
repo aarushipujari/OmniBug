@@ -37,7 +37,7 @@ export const App: React.FC = () => {
   // expired session lands on sign-in rather than on a shell that 401s.
   if (isRestoringSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400 text-sm" role="status">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-mono text-sm" role="status">
         Restoring session…
       </div>
     );
@@ -72,7 +72,7 @@ export const App: React.FC = () => {
       <a href="#main-content" className="skip-link">
         Skip to issue workspace
       </a>
-      <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden select-none font-sans">
+      <div className="flex flex-col h-screen bg-slate-50 text-slate-900 overflow-hidden select-none font-sans">
         {/* Top Navigation */}
         <Navbar onOpenNotifications={() => setIsNotificationsOpen(true)} />
 
@@ -88,9 +88,9 @@ export const App: React.FC = () => {
           />
 
           {/* Active View Container */}
-          <main id="main-content" tabIndex={-1} aria-label="Issue workspace" className="flex-1 flex min-w-0 bg-slate-950 overflow-hidden relative">
+          <main id="main-content" tabIndex={-1} aria-label="Issue workspace" className="flex-1 flex min-w-0 bg-slate-50 overflow-hidden relative">
             {isLoadingBugs ? (
-              <div className="flex-1 flex items-center justify-center text-slate-400 font-mono text-xs">
+              <div className="flex-1 flex items-center justify-center text-slate-500 font-mono text-xs">
                 <span className="animate-pulse">Loading issues & telemetry...</span>
               </div>
             ) : (

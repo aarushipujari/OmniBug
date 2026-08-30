@@ -35,28 +35,28 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 font-sans">
-          <div className="max-w-lg w-full bg-slate-900 border border-red-500/30 rounded-2xl p-6 shadow-2xl space-y-4">
+        <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6 font-sans">
+          <div className="max-w-lg w-full bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+              <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="font-bold text-sm text-slate-100">Application Recovered from Error</h2>
-                <p className="text-xs text-slate-400">An unexpected UI exception was caught safely by the Error Boundary.</p>
+                <h2 className="font-bold text-sm text-slate-900">Application Recovered from Error</h2>
+                <p className="text-xs text-slate-500">An unexpected UI exception was caught safely by the Error Boundary.</p>
               </div>
             </div>
 
             {this.state.error && (
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-rose-300 whitespace-pre-wrap overflow-x-auto max-h-40">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono text-red-600 whitespace-pre-wrap overflow-x-auto max-h-40 shadow-xs">
                 {this.state.error.message}
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
               <button
                 onClick={this.handleReset}
-                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl text-xs font-semibold shadow-xs transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-all active:scale-95 font-mono"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Reload Application
               </button>

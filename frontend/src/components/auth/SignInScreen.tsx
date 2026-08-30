@@ -58,29 +58,29 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignedIn }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-10">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-10 text-slate-900 font-sans">
       <div className="w-full max-w-md">
         <header className="flex items-center gap-3 mb-8">
-          <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-500 text-slate-950">
+          <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-slate-900 text-white shadow-xs">
             <Bug className="w-6 h-6" aria-hidden="true" />
           </span>
           <div>
-            <h1 className="text-xl font-semibold text-slate-50 tracking-tight">OmniBug</h1>
-            <p className="text-sm text-slate-400">Issue lifecycle management</p>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">OmniBug</h1>
+            <p className="text-sm text-slate-500">Issue lifecycle management</p>
           </div>
         </header>
 
         <form
           onSubmit={handleSubmit}
-          className="bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-5"
+          className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5 shadow-xs"
           aria-labelledby="signin-heading"
         >
-          <h2 id="signin-heading" className="text-base font-semibold text-slate-100">
+          <h2 id="signin-heading" className="text-base font-bold text-slate-900">
             Sign in
           </h2>
 
           <div>
-            <label htmlFor="signin-email" className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label htmlFor="signin-email" className="block text-sm font-medium text-slate-700 mb-1.5">
               Email
             </label>
             <input
@@ -90,12 +90,12 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignedIn }) => {
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full rounded-lg bg-slate-950 border border-slate-600 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+              className="w-full rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 shadow-xs"
             />
           </div>
 
           <div>
-            <label htmlFor="signin-password" className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label htmlFor="signin-password" className="block text-sm font-medium text-slate-700 mb-1.5">
               Password
             </label>
             <input
@@ -105,13 +105,13 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignedIn }) => {
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full rounded-lg bg-slate-950 border border-slate-600 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+              className="w-full rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 shadow-xs"
             />
           </div>
 
           {error && (
-            <p role="alert" className="flex items-start gap-2 text-sm text-red-300">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+            <p role="alert" className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-600" aria-hidden="true" />
               <span>{error}</span>
             </p>
           )}
@@ -119,7 +119,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignedIn }) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-slate-900"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-slate-400 shadow-xs transition-colors font-mono"
           >
             <LogIn className="w-4 h-4" aria-hidden="true" />
             {isSubmitting ? 'Signing in…' : 'Sign in'}
@@ -127,14 +127,14 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignedIn }) => {
         </form>
 
         {accounts.length > 0 && (
-          <section className="mt-6 bg-slate-900/60 border border-slate-700 rounded-2xl p-5" aria-labelledby="demo-heading">
-            <h2 id="demo-heading" className="flex items-center gap-2 text-sm font-semibold text-slate-200 mb-1">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+          <section className="mt-6 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs" aria-labelledby="demo-heading">
+            <h2 id="demo-heading" className="flex items-center gap-2 text-sm font-bold text-slate-900 mb-1">
+              <ShieldCheck className="w-4 h-4 text-slate-700" aria-hidden="true" />
               Evaluation accounts
             </h2>
-            <p className="text-xs text-slate-400 mb-3">
+            <p className="text-xs text-slate-500 mb-3">
               Each role sees different permissions. Password for all:{' '}
-              <code className="rounded bg-slate-950 border border-slate-700 px-1.5 py-0.5 text-emerald-300">
+              <code className="rounded bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-slate-900 font-mono font-bold">
                 {demoPassword}
               </code>
             </p>
@@ -147,10 +147,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ onSignedIn }) => {
                       setEmail(account.email);
                       setPassword(demoPassword);
                     }}
-                    className="w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50 border border-slate-200 transition-colors shadow-2xs"
                   >
-                    <span className="truncate">{account.name}</span>
-                    <span className="shrink-0 rounded-full border border-slate-600 px-2 py-0.5 text-[11px] uppercase tracking-wide text-slate-400">
+                    <span className="truncate font-medium">{account.name}</span>
+                    <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-mono font-medium text-slate-600">
                       {account.role}
                     </span>
                   </button>

@@ -13,55 +13,55 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, resolution, cl
     switch (status) {
       case 'UNCONFIRMED':
         return {
-          bg: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-          dot: 'bg-amber-400 animate-pulse',
+          bg: 'bg-slate-100 text-slate-700 border-slate-200',
+          dot: 'bg-slate-400',
           label: 'UNCONFIRMED',
         };
       case 'NEW':
         return {
-          bg: 'bg-sky-500/10 text-sky-300 border-sky-500/30',
-          dot: 'bg-sky-400',
+          bg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          dot: 'bg-indigo-500',
           label: 'NEW',
         };
       case 'IN_PROGRESS':
         return {
-          bg: 'bg-indigo-500/15 text-indigo-200 border-indigo-500/35',
-          dot: 'bg-indigo-400',
+          bg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          dot: 'bg-indigo-500',
           label: 'IN PROGRESS',
         };
       case 'IN_REVIEW':
         return {
-          bg: 'bg-purple-500/15 text-purple-200 border-purple-500/35',
-          dot: 'bg-purple-400',
+          bg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          dot: 'bg-indigo-500',
           label: 'IN REVIEW',
         };
       case 'RESOLVED':
         return {
-          bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-          dot: 'bg-emerald-400',
+          bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          dot: 'bg-emerald-500',
           label: resolution ? `RESOLVED (${resolution})` : 'RESOLVED',
         };
       case 'VERIFIED':
         return {
-          bg: 'bg-teal-500/15 text-teal-300 border-teal-500/30',
-          dot: 'bg-teal-400',
+          bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          dot: 'bg-emerald-500',
           label: 'VERIFIED',
         };
       case 'CLOSED':
         return {
-          bg: 'bg-slate-800/80 text-slate-300 border-slate-700/80',
-          dot: 'bg-slate-500',
+          bg: 'bg-slate-100 text-slate-600 border-slate-200',
+          dot: 'bg-slate-400',
           label: resolution ? `CLOSED (${resolution})` : 'CLOSED',
         };
       case 'REOPENED':
         return {
-          bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-          dot: 'bg-rose-400 animate-pulse',
+          bg: 'bg-red-50 text-red-700 border-red-200',
+          dot: 'bg-red-500',
           label: 'REOPENED',
         };
       default:
         return {
-          bg: 'bg-slate-800 text-slate-300 border-slate-700',
+          bg: 'bg-slate-100 text-slate-700 border-slate-200',
           dot: 'bg-slate-400',
           label: status,
         };

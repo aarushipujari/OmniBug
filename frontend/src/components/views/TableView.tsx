@@ -99,21 +99,21 @@ export const TableView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-slate-950 overflow-hidden font-sans animate-in fade-in duration-200">
+    <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden font-sans animate-in fade-in duration-200">
       {/* Top action / bulk bar */}
-      <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-900/60 backdrop-blur-xs flex items-center justify-between shadow-xs">
+      <div className="px-4 py-2.5 border-b border-slate-200 bg-white flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
           <button
             onClick={toggleSelectAll}
             aria-label={selectedIds.length > 0 ? `Deselect all ${bugs.length} issues` : `Select all ${bugs.length} issues`}
-            className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-colors duration-150"
+            className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 transition-colors duration-150"
           >
             {selectedIds.length > 0 && selectedIds.length === bugs.length ? (
-              <CheckSquare className="w-4 h-4 text-emerald-400" />
+              <CheckSquare className="w-4 h-4 text-slate-900" />
             ) : selectedIds.length > 0 ? (
-              <CheckSquare className="w-4 h-4 text-amber-400" />
+              <CheckSquare className="w-4 h-4 text-slate-700" />
             ) : (
-              <Square className="w-4 h-4 text-slate-600 hover:text-slate-400" />
+              <Square className="w-4 h-4 text-slate-400 hover:text-slate-600" />
             )}
             <span className="font-mono text-xs">
               {selectedIds.length > 0 ? `${selectedIds.length} selected` : `Select all (${bugs.length})`}
@@ -126,37 +126,37 @@ export const TableView: React.FC = () => {
                 onClick={() => setBulkActionOpen(!bulkActionOpen)}
                 aria-label={`Bulk actions menu for ${selectedIds.length} selected issues`}
                 aria-expanded={bulkActionOpen}
-                className="flex items-center gap-1.5 px-3 py-1 bg-slate-850 hover:bg-slate-800 text-xs text-slate-200 rounded-lg border border-slate-700/80 transition-all duration-150 shadow-xs"
+                className="flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-slate-50 text-xs text-slate-800 rounded-lg border border-slate-200 transition-all duration-150 shadow-xs"
               >
                 <span>Bulk Actions ({selectedIds.length})</span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
 
               {bulkActionOpen && (
-                <div className="absolute top-full left-0 mt-1.5 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-1.5 z-40 space-y-0.5 animate-in fade-in duration-100">
+                <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 z-40 space-y-0.5 animate-in fade-in duration-100">
                   <button
                     onClick={handleBulkAssignToMe}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 rounded-lg flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 transition-colors"
                   >
-                    <User className="w-3.5 h-3.5 text-emerald-400" /> Assign to Me
+                    <User className="w-3.5 h-3.5 text-slate-700" /> Assign to Me
                   </button>
-                  <div className="border-t border-slate-800 my-1" />
+                  <div className="border-t border-slate-100 my-1" />
                   <div className="text-[10px] font-bold text-slate-400 px-2.5 py-0.5 uppercase font-mono">Set Status</div>
                   <button
                     onClick={() => handleBulkStatusChange('IN_PROGRESS')}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
                   >
                     Mark IN PROGRESS
                   </button>
                   <button
                     onClick={() => handleBulkStatusChange('IN_REVIEW')}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
                   >
                     Mark IN REVIEW
                   </button>
                   <button
                     onClick={() => handleBulkStatusChange('RESOLVED')}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-emerald-300 hover:bg-slate-800 rounded-lg transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 text-xs text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors font-medium"
                   >
                     Mark RESOLVED (FIXED)
                   </button>
@@ -166,8 +166,8 @@ export const TableView: React.FC = () => {
           )}
         </div>
 
-        <div className="text-xs text-slate-400 font-normal">
-          Showing <span className="text-slate-100 font-semibold font-mono">{bugs.length}</span> issues
+        <div className="text-xs text-slate-500 font-normal">
+          Showing <span className="text-slate-900 font-semibold font-mono">{bugs.length}</span> issues
         </div>
       </div>
 
@@ -189,62 +189,62 @@ export const TableView: React.FC = () => {
           </div>
         ) : (
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-900/95 sticky top-0 z-10 border-b border-slate-800 select-none backdrop-blur-md shadow-xs">
-              <tr className="text-slate-400 font-mono text-[11px]">
+            <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-200 select-none shadow-xs">
+              <tr className="text-slate-600 font-mono text-[11px]">
                 <th className="w-10 px-3 py-2.5 text-center"></th>
                 <th
                   onClick={() => handleSort('bugNumber')}
-                  className="w-20 px-3 py-2.5 cursor-pointer group/th hover:text-slate-200 transition-colors"
+                  className="w-20 px-3 py-2.5 cursor-pointer group/th hover:text-slate-900 transition-colors"
                 >
                   <div className="flex items-center gap-1">
                     <span>ID</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-40 group-hover/th:opacity-100 group-hover/th:text-emerald-400 transition-all" />
+                    <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-40 group-hover/th:opacity-100 group-hover/th:text-slate-900 transition-all" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleSort('title')}
-                  className="px-4 py-2.5 cursor-pointer group/th hover:text-slate-200 transition-colors"
+                  className="px-4 py-2.5 cursor-pointer group/th hover:text-slate-900 transition-colors"
                 >
                   <div className="flex items-center gap-1">
                     <span>Summary & Title</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-40 group-hover/th:opacity-100 group-hover/th:text-emerald-400 transition-all" />
+                    <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-40 group-hover/th:opacity-100 group-hover/th:text-slate-900 transition-all" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleSort('componentName')}
-                  className="w-48 px-3 py-2.5 cursor-pointer group/th hover:text-slate-200 transition-colors"
+                  className="w-48 px-3 py-2.5 cursor-pointer group/th hover:text-slate-900 transition-colors"
                 >
                   Component
                 </th>
                 <th
                   onClick={() => handleSort('status')}
-                  className="w-36 px-3 py-2.5 cursor-pointer group/th hover:text-slate-200 transition-colors"
+                  className="w-36 px-3 py-2.5 cursor-pointer group/th hover:text-slate-900 transition-colors"
                 >
                   Status
                 </th>
                 <th
                   onClick={() => handleSort('severity')}
-                  className="w-32 px-3 py-2.5 cursor-pointer group/th hover:text-slate-200 transition-colors"
+                  className="w-32 px-3 py-2.5 cursor-pointer group/th hover:text-slate-900 transition-colors"
                 >
                   Severity / Pri
                 </th>
                 <th
                   onClick={() => handleSort('assigneeName')}
-                  className="w-44 px-3 py-2.5 cursor-pointer group/th hover:text-slate-200 transition-colors"
+                  className="w-44 px-3 py-2.5 cursor-pointer group/th hover:text-slate-900 transition-colors"
                 >
                   Assignee
                 </th>
                 <th className="w-40 px-3 py-2.5">Flags & Reviews</th>
                 <th
                   onClick={() => handleSort('updatedAt')}
-                  className="w-28 px-3 py-2.5 cursor-pointer group/th hover:text-slate-200 text-right transition-colors"
+                  className="w-28 px-3 py-2.5 cursor-pointer group/th hover:text-slate-900 text-right transition-colors"
                 >
                   Updated
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-850/50 font-sans">
-              {sortedBugs.map((bug, idx) => {
+            <tbody className="divide-y divide-slate-100 font-sans">
+              {sortedBugs.map((bug) => {
                 const isSelected = selectedIds.includes(bug.id);
                 const hasBlockers = bug.dependsOn.length > 0;
                 const isBlockerForOthers = bug.blocks.length > 0;
@@ -255,43 +255,35 @@ export const TableView: React.FC = () => {
                     onClick={() => setSelectedBugId(bug.id)}
                     className={`cursor-pointer transition-colors duration-150 group ${
                       isSelected
-                        ? 'bg-emerald-950/20'
-                        : idx % 2 === 1
-                        ? 'bg-slate-950/50 hover:bg-slate-850/80'
-                        : 'bg-transparent hover:bg-slate-850/80'
+                        ? 'bg-indigo-50/50'
+                        : 'bg-white hover:bg-slate-50/80'
                     }`}
                   >
                     {/* Checkbox */}
                     <td className="px-3 py-3 text-center">
-                      {/*
-                        Announced as a checkbox with a name and a state. It was
-                        an unlabelled button whose only content was an icon, so
-                        assistive technology reported neither what it selected
-                        nor whether it was selected.
-                      */}
                       <button
                         type="button"
                         role="checkbox"
                         aria-checked={isSelected}
                         aria-label={`Select issue #${bug.bugNumber}: ${bug.title}`}
                         onClick={e => toggleSelect(bug.id, e)}
-                        className="text-slate-400 hover:text-slate-200 rounded"
+                        className="text-slate-400 hover:text-slate-700 rounded"
                       >
                         {isSelected ? (
-                          <CheckSquare className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+                          <CheckSquare className="w-4 h-4 text-slate-900" aria-hidden="true" />
                         ) : (
-                          <Square className="w-4 h-4 text-slate-400 group-hover:text-slate-200" aria-hidden="true" />
+                          <Square className="w-4 h-4 text-slate-300 group-hover:text-slate-500" aria-hidden="true" />
                         )}
                       </button>
                     </td>
 
                     {/* Bug ID */}
-                    <td className="px-3 py-3 font-mono font-bold text-slate-300 text-xs whitespace-nowrap">
+                    <td className="px-3 py-3 font-mono font-bold text-slate-700 text-xs whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-emerald-400 hover:underline">#{bug.bugNumber}</span>
+                        <span className="text-slate-900 hover:underline">#{bug.bugNumber}</span>
                         {bug.isSecuritySensitive && (
                           <span title="Security Sensitive Bug">
-                            <Shield className="w-3.5 h-3.5 text-purple-400" />
+                            <Shield className="w-3.5 h-3.5 text-red-600" />
                           </span>
                         )}
                       </div>
@@ -301,33 +293,33 @@ export const TableView: React.FC = () => {
                     <td className="px-4 py-3 min-w-[280px]">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-200 group-hover:text-emerald-300 transition-colors line-clamp-1">
+                          <span className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
                             {bug.title}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
                           {bug.targetMilestone && (
-                            <span className="text-slate-400 bg-slate-850 px-1.5 py-0.2 rounded border border-slate-800">
+                            <span className="text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
                               {bug.targetMilestone}
                             </span>
                           )}
                           {isBlockerForOthers && (
-                            <span className="text-red-400 bg-red-950/30 px-1.5 py-0.2 rounded border border-red-900/40 flex items-center gap-1">
-                              <Flame className="w-3 h-3" /> Blocks {bug.blocks.length}
+                            <span className="text-red-700 bg-red-50 px-1.5 py-0.2 rounded border border-red-200 flex items-center gap-1">
+                              <Flame className="w-3 h-3 text-red-600" /> Blocks {bug.blocks.length}
                             </span>
                           )}
                           {hasBlockers && (
-                            <span className="text-amber-400 bg-amber-950/30 px-1.5 py-0.2 rounded border border-amber-900/40">
+                            <span className="text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
                               Blocked by {bug.dependsOn.length}
                             </span>
                           )}
                           {bug.comments.length > 0 && (
-                            <span className="flex items-center gap-1 text-slate-400">
+                            <span className="flex items-center gap-1 text-slate-500">
                               <MessageSquare className="w-3 h-3" /> {bug.comments.length}
                             </span>
                           )}
                           {bug.attachments.length > 0 && (
-                            <span className="flex items-center gap-1 text-slate-400">
+                            <span className="flex items-center gap-1 text-slate-500">
                               <Paperclip className="w-3 h-3" /> {bug.attachments.length}
                             </span>
                           )}
@@ -337,8 +329,8 @@ export const TableView: React.FC = () => {
 
                     {/* Component */}
                     <td className="px-3 py-3">
-                      <div className="text-slate-300 font-medium truncate">{bug.componentName}</div>
-                      <div className="text-[10px] text-slate-400 font-mono truncate">{bug.productName}</div>
+                      <div className="text-slate-900 font-medium truncate">{bug.componentName}</div>
+                      <div className="text-[10px] text-slate-500 font-mono truncate">{bug.productName}</div>
                     </td>
 
                     {/* Status */}
@@ -354,10 +346,10 @@ export const TableView: React.FC = () => {
                     {/* Assignee */}
                     <td className="px-3 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-200">
+                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-700">
                           {bug.assigneeName[0]}
                         </div>
-                        <span className="text-slate-300 truncate max-w-[120px] font-normal">
+                        <span className="text-slate-700 truncate max-w-[120px] font-normal">
                           {bug.assigneeName.split(' ')[0]}
                         </span>
                       </div>
@@ -375,7 +367,7 @@ export const TableView: React.FC = () => {
                             />
                           ))
                         ) : (
-                          <span className="text-slate-600 font-mono text-[11px]">—</span>
+                          <span className="text-slate-300 font-mono text-[11px]">—</span>
                         )}
                       </div>
                     </td>

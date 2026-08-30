@@ -264,19 +264,19 @@ export const CreateBugModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 select-none font-sans animate-in fade-in duration-150" role="dialog" aria-modal="true" aria-labelledby="create-bug-title">
-      <div className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 select-none font-sans animate-in fade-in duration-150" role="dialog" aria-modal="true" aria-labelledby="create-bug-title">
+      <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-slate-900">
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-white border-b border-slate-200 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
-            <Plus className="w-5 h-5 text-emerald-400" />
-            <h3 id="create-bug-title" className="font-bold text-sm text-slate-100 font-sans">
+            <Plus className="w-5 h-5 text-slate-700" />
+            <h3 id="create-bug-title" className="font-bold text-sm text-slate-900 font-sans">
               Enter Bug / Defect Report
             </h3>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(false)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -287,13 +287,13 @@ export const CreateBugModal: React.FC = () => {
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Live Duplicate Warning Drawer */}
           {duplicateCandidates.length > 0 && (
-            <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-950/20 space-y-2">
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2 shadow-xs">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <AlertTriangle className="w-4 h-4 text-slate-700" />
                   <span>Potential Duplicate Bugs Detected ({duplicateCandidates.length})</span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono">
+                <span className="text-[11px] text-slate-500 font-mono">
                   Check to avoid submitting redundant tickets
                 </span>
               </div>
@@ -301,22 +301,22 @@ export const CreateBugModal: React.FC = () => {
                 {duplicateCandidates.slice(0, 3).map(dup => (
                   <div
                     key={dup.bugId}
-                    className="p-2.5 bg-slate-950/90 rounded-lg border border-slate-800 flex items-center justify-between text-xs transition-colors gap-3 shadow-xs"
+                    className="p-2.5 bg-white rounded-lg border border-slate-200 flex items-center justify-between text-xs transition-colors gap-3 shadow-xs"
                   >
                     <div className="flex items-center gap-2 truncate min-w-0">
-                      <span className="font-mono font-bold text-emerald-400 shrink-0">#{dup.bugNumber}</span>
-                      <span className="text-slate-200 truncate font-sans">{dup.title}</span>
+                      <span className="font-mono font-bold text-slate-900 shrink-0">#{dup.bugNumber}</span>
+                      <span className="text-slate-800 truncate font-sans">{dup.title}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-amber-400 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                      <span className="text-slate-900 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
                         {(dup.similarityScore * 100).toFixed(0)}% match
                       </span>
                       <button
                         type="button"
                         onClick={() => setSelectedBugId(dup.bugId)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-white text-[11px] font-mono font-semibold border border-slate-700 transition-all duration-150 active:scale-95"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-800 text-[11px] font-mono font-semibold border border-slate-200 transition-all duration-150 active:scale-95 shadow-xs"
                       >
-                        <Eye className="w-3 h-3 text-emerald-400" /> Compare / View
+                        <Eye className="w-3 h-3 text-slate-600" /> Compare / View
                       </button>
                     </div>
                   </div>
@@ -327,8 +327,8 @@ export const CreateBugModal: React.FC = () => {
 
           {/* Title */}
           <div>
-            <label htmlFor="create-summary-title-1" className="text-xs font-bold text-slate-300 block mb-1.5">
-              Summary / Title <span className="text-emerald-400">*</span>
+            <label htmlFor="create-summary-title-1" className="text-xs font-bold text-slate-800 block mb-1.5">
+              Summary / Title <span className="text-slate-900">*</span>
             </label>
             <input id="create-summary-title-1"
               type="text"
@@ -336,22 +336,22 @@ export const CreateBugModal: React.FC = () => {
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Memory leak in WebAssembly SIMD compiler on 0-RTT handshake..."
-              className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500/60"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 font-mono focus:outline-none focus:bg-white focus:ring-1 focus:ring-slate-400 focus:border-slate-400 shadow-xs"
             />
           </div>
 
           {/* Description & AI Auto-Triage Button */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label htmlFor="create-detailed-description-reproduction-2" className="text-xs font-bold text-slate-300">
-                Detailed Description & Reproduction Steps <span className="text-emerald-400">*</span>
+              <label htmlFor="create-detailed-description-reproduction-2" className="text-xs font-bold text-slate-800">
+                Detailed Description & Reproduction Steps <span className="text-slate-900">*</span>
               </label>
               <button
                 type="button"
                 onClick={handleAutoAnalyze}
-                className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded text-xs font-mono font-semibold transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded text-xs font-mono font-semibold transition-colors shadow-xs"
               >
-                <Sparkles className="w-3.5 h-3.5" /> Auto-Analyze from Log / Stack Trace
+                <Sparkles className="w-3.5 h-3.5 text-slate-600" /> Auto-Analyze from Log / Stack Trace
               </button>
             </div>
             <textarea id="create-detailed-description-reproduction-2"
@@ -360,18 +360,18 @@ export const CreateBugModal: React.FC = () => {
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Describe reproduction steps, expected vs actual behavior, and paste any GDB/ASAN/stack trace logs..."
-              className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500/60"
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 font-mono focus:outline-none focus:bg-white focus:ring-1 focus:ring-slate-400 focus:border-slate-400 shadow-xs"
             />
 
             {/* Parsed Stack Trace & Root Cause Preview Card */}
             {analyzedPrediction?.parsedStackTrace && (
-              <div className="mt-2.5 p-3.5 bg-slate-950 rounded-xl border border-cyan-500/40 space-y-2 animate-in fade-in duration-200">
+              <div className="mt-2.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2 animate-in fade-in duration-200 shadow-xs">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5 font-mono">
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5 font-mono">
                       ⚡ Live {analyzedPrediction.parsedStackTrace.detectedLanguage} Traceback Detected
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 font-mono border border-cyan-500/30">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-mono border border-slate-300">
                       {analyzedPrediction.parsedStackTrace.errorType}
                     </span>
                   </div>
@@ -387,54 +387,54 @@ export const CreateBugModal: React.FC = () => {
                       }
                       toast('AI Suggestions Applied', `Auto-populated component & severity`, 'success');
                     }}
-                    className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded text-xs font-mono font-bold transition-all duration-150 active:scale-95 shadow-xs"
+                    className="flex items-center gap-1 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-mono font-bold transition-all duration-150 active:scale-95 shadow-xs"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Apply Suggestions ({analyzedPrediction.suggestedSeverity})</span>
                   </button>
                 </div>
-                <div className="text-xs font-mono text-slate-300 bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
-                  <div className="text-rose-400 font-bold mb-1">{analyzedPrediction.parsedStackTrace.errorMessage}</div>
+                <div className="text-xs font-mono text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200">
+                  <div className="text-red-600 font-bold mb-1">{analyzedPrediction.parsedStackTrace.errorMessage}</div>
                   {analyzedPrediction.parsedStackTrace.culpritFile && (
-                    <div className="text-[11px] text-slate-400">
-                      Culprit: <span className="text-emerald-400 font-bold">{analyzedPrediction.parsedStackTrace.culpritFile}</span>
+                    <div className="text-[11px] text-slate-600">
+                      Culprit: <span className="text-slate-900 font-bold">{analyzedPrediction.parsedStackTrace.culpritFile}</span>
                       {analyzedPrediction.parsedStackTrace.culpritLine ? ` (Line ${analyzedPrediction.parsedStackTrace.culpritLine})` : ''}
                     </div>
                   )}
                 </div>
                 {analyzedPrediction.rootCauseAnalysis && (
-                  <div className="text-[11px] text-slate-300 font-sans leading-relaxed pt-0.5">
-                    <span className="text-slate-400 font-semibold">Root Cause: </span>
+                  <div className="text-[11px] text-slate-700 font-sans leading-relaxed pt-0.5">
+                    <span className="text-slate-900 font-semibold">Root Cause: </span>
                     {analyzedPrediction.rootCauseAnalysis}
                   </div>
                 )}
                 {analyzedPrediction.suggestedTestCase && (
                   <div className="pt-1.5 space-y-2">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-[11px] font-mono text-cyan-300 block font-semibold">
+                      <span className="text-[11px] font-mono text-slate-700 block font-semibold">
                         🧪 Generated Reproduction Test Template:
                       </span>
                       <button
                         type="button"
                         onClick={handleRunSandboxTest}
                         disabled={isTestingSandbox}
-                        className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600/30 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 rounded text-[11px] font-mono font-bold transition-all duration-150 active:scale-95 shadow-xs"
+                        className="flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded text-[11px] font-mono font-bold transition-all duration-150 active:scale-95 shadow-xs"
                       >
-                        <Play className="w-3 h-3 fill-emerald-400" />
+                        <Play className="w-3 h-3 fill-slate-700" />
                         <span>{isTestingSandbox ? 'Executing in Sandbox...' : '▶ Run Test in Sandbox'}</span>
                       </button>
                     </div>
-                    <pre className="p-2.5 bg-slate-900/90 text-slate-300 text-[11px] font-mono rounded-lg border border-slate-800 overflow-x-auto shadow-inner">
+                    <pre className="p-2.5 bg-white text-slate-800 text-[11px] font-mono rounded-lg border border-slate-200 overflow-x-auto shadow-xs">
                       {analyzedPrediction.suggestedTestCase}
                     </pre>
 
                     {sandboxResult && (
-                      <div className="p-3 bg-slate-950 rounded-lg border border-emerald-500/40 space-y-1.5 animate-in fade-in duration-150 shadow-inner">
-                        <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-400">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                      <div className="p-3 bg-slate-50 rounded-lg border border-slate-300 space-y-1.5 animate-in fade-in duration-150 shadow-xs">
+                        <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-slate-900">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Sandbox Test Execution Output:</span>
                         </div>
-                        <pre className="text-[10.5px] font-mono text-emerald-300/95 leading-relaxed whitespace-pre-wrap bg-slate-900/90 p-2.5 rounded border border-slate-800">
+                        <pre className="text-[10.5px] font-mono text-slate-800 leading-relaxed whitespace-pre-wrap bg-white p-2.5 rounded border border-slate-200">
                           {sandboxResult}
                         </pre>
                       </div>
@@ -448,7 +448,7 @@ export const CreateBugModal: React.FC = () => {
           {/* Product, Component, Version, Milestone */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
             <div>
-              <label htmlFor="create-product-3" className="text-slate-400 block mb-1">Product</label>
+              <label htmlFor="create-product-3" className="text-slate-500 block mb-1 font-semibold">Product</label>
               <select id="create-product-3"
                 value={productId}
                 onChange={e => {
@@ -458,7 +458,7 @@ export const CreateBugModal: React.FC = () => {
                     setComponentIdOverride(prod.components[0].id);
                   }
                 }}
-                className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
+                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 focus:bg-white"
               >
                 {products.map(p => (
                   <option key={p.id} value={p.id}>
@@ -469,11 +469,11 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="create-component-4" className="text-slate-400 block mb-1">Component</label>
+              <label htmlFor="create-component-4" className="text-slate-500 block mb-1 font-semibold">Component</label>
               <select id="create-component-4"
                 value={componentId}
                 onChange={e => setComponentIdOverride(e.target.value)}
-                className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
+                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 focus:bg-white"
               >
                 {selectedProduct?.components.map(c => (
                   <option key={c.id} value={c.id}>
@@ -484,11 +484,11 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="create-version-5" className="text-slate-400 block mb-1">Version</label>
+              <label htmlFor="create-version-5" className="text-slate-500 block mb-1 font-semibold">Version</label>
               <select id="create-version-5"
                 value={version}
                 onChange={e => setVersionOverride(e.target.value)}
-                className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
+                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 focus:bg-white"
               >
                 {selectedProduct?.versions.map(v => (
                   <option key={v} value={v}>
@@ -499,11 +499,11 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="create-target-milestone-6" className="text-slate-400 block mb-1">Target Milestone</label>
+              <label htmlFor="create-target-milestone-6" className="text-slate-500 block mb-1 font-semibold">Target Milestone</label>
               <select id="create-target-milestone-6"
                 value={targetMilestone}
                 onChange={e => setTargetMilestoneOverride(e.target.value)}
-                className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
+                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 focus:bg-white"
               >
                 {selectedProduct?.milestones.map(m => (
                   <option key={m.id} value={m.name}>
@@ -517,11 +517,11 @@ export const CreateBugModal: React.FC = () => {
           {/* Severity, Priority, Security, Hours */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
             <div>
-              <label htmlFor="create-severity-7" className="text-slate-400 block mb-1">Severity</label>
+              <label htmlFor="create-severity-7" className="text-slate-500 block mb-1 font-semibold">Severity</label>
               <select id="create-severity-7"
                 value={severity}
                 onChange={e => setSeverity(e.target.value as any)}
-                className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 capitalize"
+                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 capitalize focus:bg-white"
               >
                 <option value="blocker">Blocker (Release Stop)</option>
                 <option value="critical">Critical</option>
@@ -534,11 +534,11 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="create-priority-8" className="text-slate-400 block mb-1">Priority</label>
+              <label htmlFor="create-priority-8" className="text-slate-500 block mb-1 font-semibold">Priority</label>
               <select id="create-priority-8"
                 value={priority}
                 onChange={e => setPriority(e.target.value as any)}
-                className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
+                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 focus:bg-white"
               >
                 <option value="P1">P1 (Immediate Fix)</option>
                 <option value="P2">P2 (High)</option>
@@ -549,22 +549,23 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="create-estimated-hours-9" className="text-slate-400 block mb-1">Estimated Hours</label>
+              <label htmlFor="create-estimated-hours-9" className="text-slate-500 block mb-1 font-semibold">Estimated Hours</label>
               <input id="create-estimated-hours-9"
                 type="number"
                 value={estimatedHours}
                 onChange={e => setEstimatedHours(e.target.value)}
-                className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 font-mono"
+                className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 font-mono focus:bg-white"
               />
             </div>
 
             <div className="flex flex-col justify-end">
-              <label htmlFor="create-setissecuritysensitive-e-target-10" className="flex items-center gap-2 p-2 bg-purple-950/20 border border-purple-900/40 rounded cursor-pointer text-purple-300">
+              <label htmlFor="create-setissecuritysensitive-e-target-10" className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded cursor-pointer text-slate-800">
                 <input
                   type="checkbox"
+                  id="create-setissecuritysensitive-e-target-10"
                   checked={isSecuritySensitive}
                   onChange={e => setIsSecuritySensitive(e.target.checked)}
-                  className="rounded bg-slate-800 text-purple-500"
+                  className="rounded bg-white border-slate-300 text-slate-900"
                 />
                 <span className="font-semibold text-[11px]">Security Sensitive</span>
               </label>
@@ -573,32 +574,32 @@ export const CreateBugModal: React.FC = () => {
 
           {/* Initial Patch / Diff (Optional) */}
           <div>
-            <label htmlFor="create-initial-git-patch-11" className="text-xs font-bold text-slate-300 block mb-1">
+            <label htmlFor="create-initial-git-patch-11" className="text-xs font-bold text-slate-800 block mb-1">
               Initial Git Patch / Diff Attachment (Optional)
             </label>
-            <textarea id="create-setissecuritysensitive-e-target-10"
+            <textarea id="create-initial-git-patch-11"
               rows={3}
               value={patchContent}
               onChange={e => setPatchContent(e.target.value)}
               placeholder="Paste unified git diff (--- a/file +++ b/file) or leave empty..."
-              className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 font-mono placeholder-slate-600 focus:outline-none"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:bg-white shadow-xs"
             />
           </div>
 
           {/* Tags */}
           <div>
-            <span className="text-xs font-bold text-slate-300 block mb-1">Keyword Tags</span>
-            <div className="flex flex-wrap gap-1.5 items-center p-2 bg-slate-950 border border-slate-800 rounded-lg">
+            <span className="text-xs font-bold text-slate-800 block mb-1">Keyword Tags</span>
+            <div className="flex flex-wrap gap-1.5 items-center p-2 bg-slate-50 border border-slate-200 rounded-lg">
               {tags.map(t => (
                 <span
                   key={t}
-                  className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-xs font-mono flex items-center gap-1"
+                  className="px-2 py-0.5 rounded bg-white text-slate-800 border border-slate-200 text-xs font-mono flex items-center gap-1 shadow-xs"
                 >
                   #{t}
                   <button
                     type="button"
                     onClick={() => setTags(tags.filter(x => x !== t))}
-                    className="text-slate-400 hover:text-white"
+                    className="text-slate-400 hover:text-slate-900 ml-0.5"
                   >
                     ×
                   </button>
@@ -610,24 +611,24 @@ export const CreateBugModal: React.FC = () => {
                 onChange={e => setTagInput(e.target.value)}
                 onKeyDown={handleAddTag}
                 placeholder="Type tag and press Enter..."
-                className="bg-transparent text-xs text-slate-200 focus:outline-none font-mono flex-1 min-w-[120px]"
+                className="bg-transparent text-xs text-slate-900 placeholder-slate-400 focus:outline-none font-mono flex-1 min-w-[120px]"
               />
             </div>
           </div>
 
           {/* Submit Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(false)}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors"
+              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-lg shadow-emerald-950/50 transition-colors font-mono"
+              className="px-5 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors font-mono"
             >
               {isSubmitting ? 'Creating...' : 'Submit Bug Report'}
             </button>

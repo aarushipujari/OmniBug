@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext.js';
 import {
   Sparkles,
@@ -101,29 +101,22 @@ export const GuidedTourBanner: React.FC = () => {
   const currentStep = TOUR_STEPS[currentStepIndex];
 
   return (
-    <div className="bg-gradient-to-r from-emerald-950/70 via-slate-900/90 to-indigo-950/70 border-b border-emerald-500/30 px-4 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs select-none shadow-md backdrop-blur-xs animate-in fade-in duration-150">
-      {/* Left: Step Info & Icon */}
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
-          {currentStep.icon}
-        </div>
-        <div className="truncate">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
-              {currentStep.badge}
-            </span>
-            <span className="text-slate-400">•</span>
-            <span className="font-bold text-slate-100 truncate font-sans text-xs">
-              {currentStep.title}
-            </span>
-          </div>
-          <p className="text-slate-400 text-[11px] truncate mt-0.5 max-w-2xl font-sans hidden sm:block">
-            {currentStep.description}
-          </p>
-        </div>
+    <div className="bg-slate-50 border-b border-slate-200 px-4 py-2 flex flex-col md:flex-row items-center justify-between gap-3 text-xs select-none font-sans">
+      {/* Left: Step Info */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200 shrink-0">
+          {currentStep.badge.split(' • ')[0]}
+        </span>
+        <span className="font-semibold text-slate-900 truncate">
+          {currentStep.title}
+        </span>
+        <span className="text-slate-400 hidden lg:inline">—</span>
+        <p className="text-slate-500 text-[11px] truncate max-w-xl hidden lg:block font-normal">
+          {currentStep.description}
+        </p>
       </div>
 
-      {/* Right: Controls & Jump Action */}
+      {/* Right: Controls */}
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={() =>
@@ -133,21 +126,21 @@ export const GuidedTourBanner: React.FC = () => {
               setSelectedBugId,
             })
           }
-          className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-md font-mono text-[11px] font-bold shadow-xs transition-all duration-150 active:scale-95"
+          className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-[11px] font-medium transition-colors"
         >
           <Play className="w-3 h-3 fill-white" />
           <span>{currentStep.actionLabel}</span>
         </button>
 
-        <div className="flex items-center gap-1 border-l border-slate-700 pl-2">
+        <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
           <button
             onClick={() =>
               setCurrentStepIndex(
                 prev => (prev - 1 + TOUR_STEPS.length) % TOUR_STEPS.length
               )
             }
-            title="Previous Innovation"
-            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            title="Previous Step"
+            className="p-1 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
           </button>
@@ -155,8 +148,8 @@ export const GuidedTourBanner: React.FC = () => {
             onClick={() =>
               setCurrentStepIndex(prev => (prev + 1) % TOUR_STEPS.length)
             }
-            title="Next Innovation"
-            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            title="Next Step"
+            className="p-1 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition-colors"
           >
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
@@ -164,8 +157,8 @@ export const GuidedTourBanner: React.FC = () => {
 
         <button
           onClick={() => setIsVisible(false)}
-          title="Dismiss Tour Banner"
-          className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors ml-1"
+          title="Dismiss Banner"
+          className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors ml-0.5"
         >
           <X className="w-3.5 h-3.5" />
         </button>

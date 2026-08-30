@@ -62,24 +62,24 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
   };
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/90 overflow-hidden font-mono text-xs shadow-lg">
+    <div className="rounded-lg border border-slate-200 bg-white overflow-hidden font-mono text-xs shadow-xs">
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-850 border-b border-slate-800">
-        <div className="flex items-center gap-2 text-slate-300">
-          <FileCode className="w-4 h-4 text-emerald-400" />
+      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+        <div className="flex items-center gap-2 text-slate-800">
+          <FileCode className="w-4 h-4 text-slate-700" />
           <span className="font-semibold">{fileName}</span>
-          <span className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+          <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
             Git Patch
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex bg-slate-800 rounded p-0.5 border border-slate-700">
+          <div className="flex bg-slate-100 rounded p-0.5 border border-slate-200">
             <button
               onClick={() => setViewMode('unified')}
               className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-sans transition-colors ${
                 viewMode === 'unified'
-                  ? 'bg-slate-700 text-white font-medium shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-white text-slate-900 font-medium shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               <AlignJustify className="w-3 h-3" /> Unified
@@ -88,8 +88,8 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
               onClick={() => setViewMode('split')}
               className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-sans transition-colors ${
                 viewMode === 'split'
-                  ? 'bg-slate-700 text-white font-medium shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-white text-slate-900 font-medium shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               <Split className="w-3 h-3" /> Split
@@ -97,9 +97,9 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
           </div>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors font-sans text-[11px]"
+            className="flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-colors font-sans text-[11px] shadow-xs"
           >
-            {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+            {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
             <span>{copied ? 'Copied' : 'Raw Patch'}</span>
           </button>
         </div>
@@ -108,18 +108,18 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
       {/* Diff Code Container */}
       <div className="overflow-x-auto max-h-96">
         {viewMode === 'unified' ? (
-          <div className="divide-y divide-slate-850/50">
+          <div className="divide-y divide-slate-100">
             {parsedLines.map((line, idx) => {
               if (line.type === 'meta') {
                 return (
-                  <div key={idx} className="px-4 py-1 text-slate-400 bg-slate-900/50 italic text-[11px]">
+                  <div key={idx} className="px-4 py-1 text-slate-500 bg-slate-50 italic text-[11px]">
                     {line.content}
                   </div>
                 );
               }
               if (line.type === 'header') {
                 return (
-                  <div key={idx} className="px-4 py-1.5 text-cyan-400 bg-cyan-950/20 font-semibold border-y border-cyan-900/30">
+                  <div key={idx} className="px-4 py-1.5 text-slate-700 bg-slate-100 font-semibold border-y border-slate-200">
                     {line.content}
                   </div>
                 );
@@ -131,18 +131,18 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
               return (
                 <div
                   key={idx}
-                  className={`flex items-start hover:brightness-110 transition-colors ${
+                  className={`flex items-start transition-colors ${
                     isAdd
-                      ? 'bg-emerald-950/25 text-emerald-300'
+                      ? 'bg-emerald-50 text-emerald-900'
                       : isDel
-                      ? 'bg-rose-950/25 text-rose-300'
-                      : 'text-slate-300 bg-transparent'
+                      ? 'bg-red-50 text-red-900'
+                      : 'text-slate-800 bg-white'
                   }`}
                 >
                   {/* Line numbers */}
-                  <div className="flex select-none text-[11px] text-slate-400 bg-slate-950/40 border-r border-slate-800 text-right shrink-0">
+                  <div className="flex select-none text-[11px] text-slate-400 bg-slate-50/70 border-r border-slate-200 text-right shrink-0">
                     <span className="w-10 px-2 py-0.5">{line.oldLineNumber ?? ''}</span>
-                    <span className="w-10 px-2 py-0.5 border-l border-slate-850">{line.newLineNumber ?? ''}</span>
+                    <span className="w-10 px-2 py-0.5 border-l border-slate-200">{line.newLineNumber ?? ''}</span>
                   </div>
                   {/* Diff marker */}
                   <div className="w-6 text-center select-none py-0.5 font-bold shrink-0">
@@ -157,24 +157,24 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-2 divide-x divide-slate-800 text-[11px]">
+          <div className="grid grid-cols-2 divide-x divide-slate-200 text-[11px]">
             {/* Split View Left: Original / Deletions */}
-            <div className="divide-y divide-slate-850/50">
-              <div className="px-3 py-1.5 bg-slate-950/80 font-bold text-slate-400 border-b border-slate-800 text-[10px] uppercase font-mono">
+            <div className="divide-y divide-slate-100">
+              <div className="px-3 py-1.5 bg-slate-50 font-bold text-slate-600 border-b border-slate-200 text-[10px] uppercase font-mono">
                 Original (Base)
               </div>
               {parsedLines.map((line, idx) => {
                 if (line.type === 'meta' || line.type === 'header') {
                   return (
-                    <div key={`left-${idx}`} className="px-3 py-1 text-slate-400 bg-slate-950/30 truncate">
+                    <div key={`left-${idx}`} className="px-3 py-1 text-slate-500 bg-slate-50 truncate">
                       {line.content}
                     </div>
                   );
                 }
                 if (line.type === 'add') {
                   return (
-                    <div key={`left-${idx}`} className="flex items-center bg-slate-950/20 text-slate-600 py-0.5">
-                      <span className="w-9 px-2 text-right text-slate-700 select-none"> </span>
+                    <div key={`left-${idx}`} className="flex items-center bg-slate-50/50 text-slate-400 py-0.5">
+                      <span className="w-9 px-2 text-right text-slate-300 select-none"> </span>
                       <span className="px-2 select-none"> </span>
                     </div>
                   );
@@ -183,9 +183,9 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
                 return (
                   <div
                     key={`left-${idx}`}
-                    className={`flex items-start ${isDel ? 'bg-rose-950/30 text-rose-300' : 'text-slate-300'}`}
+                    className={`flex items-start ${isDel ? 'bg-red-50 text-red-900' : 'text-slate-800'}`}
                   >
-                    <span className="w-9 px-2 py-0.5 text-right text-slate-400 select-none border-r border-slate-800 shrink-0">
+                    <span className="w-9 px-2 py-0.5 text-right text-slate-400 select-none border-r border-slate-200 shrink-0">
                       {line.oldLineNumber ?? ''}
                     </span>
                     <span className="w-4 text-center py-0.5 select-none font-bold shrink-0">{isDel ? '-' : ' '}</span>
@@ -196,22 +196,22 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
             </div>
 
             {/* Split View Right: Modified / Additions */}
-            <div className="divide-y divide-slate-850/50">
-              <div className="px-3 py-1.5 bg-slate-950/80 font-bold text-emerald-400 border-b border-slate-800 text-[10px] uppercase font-mono">
+            <div className="divide-y divide-slate-100">
+              <div className="px-3 py-1.5 bg-slate-50 font-bold text-slate-900 border-b border-slate-200 text-[10px] uppercase font-mono">
                 Proposed Patch
               </div>
               {parsedLines.map((line, idx) => {
                 if (line.type === 'meta' || line.type === 'header') {
                   return (
-                    <div key={`right-${idx}`} className="px-3 py-1 text-slate-400 bg-slate-950/30 truncate">
+                    <div key={`right-${idx}`} className="px-3 py-1 text-slate-500 bg-slate-50 truncate">
                       {line.content}
                     </div>
                   );
                 }
                 if (line.type === 'delete') {
                   return (
-                    <div key={`right-${idx}`} className="flex items-center bg-slate-950/20 text-slate-600 py-0.5">
-                      <span className="w-9 px-2 text-right text-slate-700 select-none"> </span>
+                    <div key={`right-${idx}`} className="flex items-center bg-slate-50/50 text-slate-400 py-0.5">
+                      <span className="w-9 px-2 text-right text-slate-300 select-none"> </span>
                       <span className="px-2 select-none"> </span>
                     </div>
                   );
@@ -220,9 +220,9 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
                 return (
                   <div
                     key={`right-${idx}`}
-                    className={`flex items-start ${isAdd ? 'bg-emerald-950/30 text-emerald-300' : 'text-slate-300'}`}
+                    className={`flex items-start ${isAdd ? 'bg-emerald-50 text-emerald-900' : 'text-slate-800'}`}
                   >
-                    <span className="w-9 px-2 py-0.5 text-right text-slate-400 select-none border-r border-slate-800 shrink-0">
+                    <span className="w-9 px-2 py-0.5 text-right text-slate-400 select-none border-r border-slate-200 shrink-0">
                       {line.newLineNumber ?? ''}
                     </span>
                     <span className="w-4 text-center py-0.5 select-none font-bold shrink-0">{isAdd ? '+' : ' '}</span>

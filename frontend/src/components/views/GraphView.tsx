@@ -108,8 +108,8 @@ export const GraphView: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-400 text-xs">
-        <RefreshCw className="w-5 h-5 animate-spin text-emerald-400 mr-2" />
+      <div className="flex-1 flex items-center justify-center bg-slate-50 text-slate-500 text-xs">
+        <RefreshCw className="w-5 h-5 animate-spin text-slate-700 mr-2" />
         Generating interactive blocker topology...
       </div>
     );
@@ -117,7 +117,7 @@ export const GraphView: React.FC = () => {
 
   if (!graphData || graphData.nodes.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8 bg-slate-950">
+      <div className="flex-1 flex items-center justify-center p-8 bg-slate-50">
         <EmptyState
           icon={GitGraph}
           title="No dependency links"
@@ -132,13 +132,6 @@ export const GraphView: React.FC = () => {
   const positions = getNodePositions(graphData.nodes);
 
   return (
-    /*
-      `role="application"` is the correct ARIA role for a surface that consumes
-      the arrow keys itself, and it is what makes the panning above reachable
-      without a pointer. jsx-a11y classifies the role as non-interactive, so
-      these two rules fire on a pattern that is the fix rather than the defect.
-    */
-    /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */
     <div
       ref={containerRef}
       onMouseDown={handleMouseDown}
@@ -148,23 +141,21 @@ export const GraphView: React.FC = () => {
       role="application"
       tabIndex={0}
       aria-label="Dependency graph canvas. Use the arrow keys to pan, Shift with an arrow key to pan faster, and Home to recentre."
-      className="flex-1 flex flex-col min-w-0 bg-slate-950 overflow-hidden relative select-none font-sans cursor-grab active:cursor-grabbing animate-in fade-in duration-200"
+      className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden relative select-none font-sans cursor-grab active:cursor-grabbing animate-in fade-in duration-200"
     >
-      {/* eslint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
       {/* Top Header & Graph Controls */}
-      <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md flex items-center justify-between z-10 shadow-xs">
+      <div className="px-4 py-2 border-b border-slate-200 bg-white flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-slate-200 text-xs font-semibold">
-            <GitGraph className="w-4 h-4 text-emerald-400" />
-            <span>Interactive Blocker & Dependency Topology</span>
-          </div>
+          <span className="text-slate-900 text-xs font-semibold">
+            Blocker & Dependency Topology
+          </span>
           {graphData.hasCycles ? (
-            <span className="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/40 font-bold">
-              <AlertTriangle className="w-3 h-3" /> Cyclic Blocker Detected!
+            <span className="flex items-center gap-1 text-[11px] font-mono px-1.5 py-0.2 rounded bg-red-50 text-red-700 border border-red-200">
+              <AlertTriangle className="w-3 h-3" /> Cycle Detected
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-medium">
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Valid Directed Acyclic Graph (DAG)
+            <span className="flex items-center gap-1 text-[11px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Valid DAG
             </span>
           )}
         </div>
@@ -173,27 +164,27 @@ export const GraphView: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="hidden lg:flex items-center gap-3 text-[11px] font-mono text-slate-400">
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-0.5 bg-red-400" /> Blocker Path
+              <span className="w-2 h-0.5 bg-red-600" /> Blocker Path
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-0.5 border-t border-dashed border-amber-400" /> Duplicate
+              <span className="w-2 h-0.5 border-t border-dashed border-slate-400" /> Duplicate
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" /> Resolved
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Resolved
             </span>
           </div>
 
-          <div className="flex items-center bg-slate-850 rounded-lg p-0.5 border border-slate-700/80 shadow-xs">
+          <div className="flex items-center rounded border border-slate-200 p-0.5 bg-white">
             <button
               onClick={() => setZoom(prev => Math.min(prev + 0.15, 2))}
-              className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-750 transition-all duration-150 active:scale-[0.95]"
+              className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-100 transition-colors"
               title="Zoom In"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setZoom(prev => Math.max(prev - 0.15, 0.4))}
-              className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-750 transition-all duration-150 active:scale-[0.95]"
+              className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-100 transition-colors"
               title="Zoom Out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
@@ -203,14 +194,14 @@ export const GraphView: React.FC = () => {
                 setZoom(1);
                 setPan({ x: 50, y: 50 });
               }}
-              className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-750 transition-all duration-150 active:scale-[0.95]"
+              className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-100 transition-colors"
               title="Reset View"
             >
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={fetchGraph}
-              className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-750 transition-all duration-150 active:scale-[0.95]"
+              className="p-1 text-slate-500 hover:text-slate-900 rounded hover:bg-slate-100 transition-colors"
               title="Refresh Graph"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -237,7 +228,7 @@ export const GraphView: React.FC = () => {
             markerHeight="6"
             orient="auto-start-reverse"
           >
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626" />
           </marker>
           <marker
             id="arrow-duplicate"
@@ -248,7 +239,7 @@ export const GraphView: React.FC = () => {
             markerHeight="6"
             orient="auto-start-reverse"
           >
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" />
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
           </marker>
         </defs>
 
@@ -276,10 +267,10 @@ export const GraphView: React.FC = () => {
                 fill="none"
                 stroke={
                   edge.type === 'duplicate'
-                    ? '#f59e0b'
+                    ? '#94a3b8'
                     : isCritical
-                    ? '#ef4444'
-                    : '#475569'
+                    ? '#dc2626'
+                    : '#cbd5e1'
                 }
                 strokeWidth={isCritical ? 3 : 2}
                 strokeDasharray={edge.type === 'duplicate' ? '4 4' : undefined}
@@ -312,25 +303,25 @@ export const GraphView: React.FC = () => {
                 width="220"
                 height="80"
                 rx="12"
-                fill="#1e293b"
+                fill="#ffffff"
                 stroke={
                   isCritical
-                    ? '#ef4444'
+                    ? '#dc2626'
                     : isHovered
-                    ? '#10b981'
+                    ? '#4f46e5'
                     : node.isResolved
-                    ? '#059669'
-                    : '#334155'
+                    ? '#16a34a'
+                    : '#e2e8f0'
                 }
                 strokeWidth={isCritical || isHovered ? '2.5' : '1.5'}
-                className="shadow-2xl transition-all duration-150 filter drop-shadow-md"
+                className="shadow-xs transition-all duration-150"
               />
 
               {/* Bug # and Severity */}
-              <text x="14" y="24" fill="#10b981" fontSize="12" fontWeight="bold" fontFamily="monospace">
+              <text x="14" y="24" fill="#0f172a" fontSize="12" fontWeight="bold" fontFamily="monospace">
                 #{node.bugNumber}
               </text>
-              <text x="75" y="24" fill="#94a3b8" fontSize="10" fontFamily="sans-serif">
+              <text x="75" y="24" fill="#64748b" fontSize="10" fontFamily="sans-serif">
                 {node.severity.toUpperCase()} • {node.priority}
               </text>
 
@@ -339,14 +330,14 @@ export const GraphView: React.FC = () => {
                 cx="195"
                 cy="20"
                 r="4"
-                fill={node.isResolved ? '#10b981' : node.status === 'IN_REVIEW' ? '#c084fc' : '#38bdf8'}
+                fill={node.isResolved ? '#16a34a' : node.status === 'IN_REVIEW' ? '#4f46e5' : '#64748b'}
               />
 
               {/* Title (Truncated) */}
               <text
                 x="14"
                 y="46"
-                fill="#f1f5f9"
+                fill="#0f172a"
                 fontSize="11"
                 fontWeight="600"
                 fontFamily="sans-serif"
@@ -361,7 +352,7 @@ export const GraphView: React.FC = () => {
               </text>
 
               {node.blockerCount > 0 && (
-                <text x="130" y="66" fill="#ef4444" fontSize="10" fontFamily="monospace" fontWeight="bold">
+                <text x="130" y="66" fill="#dc2626" fontSize="10" fontFamily="monospace" fontWeight="bold">
                   ⚠️ {node.blockerCount} blocker{node.blockerCount > 1 ? 's' : ''}
                 </text>
               )}
