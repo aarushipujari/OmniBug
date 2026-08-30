@@ -18,7 +18,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
   const {
-    setCurrentUser,
+    switchUser,
     users,
     products,
     activeProductId,
@@ -229,9 +229,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
                   <button
                     key={u.id}
                     onClick={() => {
-                      setCurrentUser(u);
+                      switchUser(u);
                       setIsUserMenuOpen(false);
-                      toast('Active Persona Switched', `Now simulating ${u.name} (${u.role})`, 'info');
                     }}
                     className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs flex items-center gap-2.5 transition-colors ${
                       currentUser.id === u.id

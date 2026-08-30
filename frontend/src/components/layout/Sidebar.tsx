@@ -38,9 +38,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImportExport, onOpenArch
 
   const handleReset = async () => {
     if (window.confirm('Reset database to original Bugzilla sample dataset?')) {
-      await api.resetStore();
-      await refreshData();
-      toast('Database Reset', 'Restored sample products, components, bugs, and audit logs.', 'success');
+      try {
+        await api.resetStore();
+        await refreshData();
+        toast('Database Reset', 'Restored sample products, components, bugs, and audit logs.', 'success');
+      } catch (err: any) {
+        toast(
+          'Permission Denied (RBAC)',
+          err.message || 'Requires Admin or Maintainer role. Current role cannot reset the database.',
+          'alert'
+        );
+      }
     }
   };
 

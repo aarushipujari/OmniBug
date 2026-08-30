@@ -24,6 +24,7 @@ export interface ToastNotification {
 interface AppContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
+  switchUser: (user: User) => Promise<void>;
   isRestoringSession: boolean;
   signOut: () => void;
   users: User[];
@@ -218,6 +219,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
   }, []);
 
+  const switchUser = useCallback(
+    async (user: User) => {
+      try {
+        const authRes = await api.login(user.email, 'omnibug-demo');
+        setCurrentUser(authRes.user);
+        toast('Active Persona Switched', `Logged in as ${authRes.user.name} (${authRes.user.role})`, 'info');
+      } catch (err: any) {
+        console.error('Failed to switch persona session token:', err);
+        setCurrentUser(user);
+      }
+    },
+    [toast]
+  );
+
   useEffect(() => {
     if (!currentUser) return;
     refreshData();
@@ -272,6 +287,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         currentUser,
         setCurrentUser,
+        switchUser,
         isRestoringSession,
         signOut,
         users,

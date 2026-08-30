@@ -28,7 +28,7 @@ export const CommandPalette: React.FC = () => {
     setIsImportExportOpen,
     setIsArchitectureOpen,
     users,
-    setCurrentUser,
+    switchUser,
     setSearchQuery,
   } = useApp();
 
@@ -186,7 +186,7 @@ export const CommandPalette: React.FC = () => {
       title: `Switch to ${u.name} (${u.role})`,
       icon: <User className="w-4 h-4 text-emerald-400" />,
       run: () => {
-        setCurrentUser(u);
+        switchUser(u);
         setIsCommandPaletteOpen(false);
       },
     }));
