@@ -13,10 +13,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-none font-sans animate-in fade-in duration-150">
-      <div
-        className="w-full max-w-5xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={e => e.stopPropagation()}
-      >
+      <div className="w-full max-w-5xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-850 border-b border-slate-800 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2.5">
@@ -86,10 +83,10 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
                 <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
                   <div className="font-mono font-bold text-slate-200 text-xs flex items-center justify-between">
                     <span className="text-emerald-400">TABLE: Bug / Issue</span>
-                    <span className="text-[10px] text-slate-500">Primary Domain Entity</span>
+                    <span className="text-[10px] text-slate-400">Primary Domain Entity</span>
                   </div>
                   <table className="w-full text-left font-mono text-[11px]">
-                    <thead className="text-slate-500 border-b border-slate-850">
+                    <thead className="text-slate-400 border-b border-slate-850">
                       <tr><th className="pb-1">Field</th><th className="pb-1">Type</th><th className="pb-1">Description</th></tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850/60 text-slate-300">
@@ -109,10 +106,10 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
                 <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
                   <div className="font-mono font-bold text-slate-200 text-xs flex items-center justify-between">
                     <span className="text-purple-400">TABLE: BugFlag (Review System)</span>
-                    <span className="text-[10px] text-slate-500">Peer Approval Engine</span>
+                    <span className="text-[10px] text-slate-400">Peer Approval Engine</span>
                   </div>
                   <table className="w-full text-left font-mono text-[11px]">
-                    <thead className="text-slate-500 border-b border-slate-850">
+                    <thead className="text-slate-400 border-b border-slate-850">
                       <tr><th className="pb-1">Field</th><th className="pb-1">Type</th><th className="pb-1">Description</th></tr>
                     </thead>
                     <tbody className="divide-y divide-slate-850/60 text-slate-300">
@@ -240,7 +237,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
                     method: 'POST',
                     path: '/api/ai/triage',
                     color: 'text-purple-400 border-purple-500/30 bg-purple-500/10',
-                    desc: 'Multi-language AST crash parser (Python, V8, Go, Rust, ASAN), culprit line extractor, and Jest test synthesizer.',
+                    desc: 'Multi-language crash traceback parser (Python, V8, Go, Rust, ASAN) using per-language patterns, culprit line extractor, and Jest test synthesizer.',
                     params: 'Payload: { title, description, productId }',
                     response: '{ suggestedSeverity, suggestedComponentId, parsedStackTrace, suggestedTestCase }',
                   },
@@ -297,7 +294,7 @@ export const ArchitectureModal: React.FC<ArchitectureModalProps> = ({ isOpen, on
                 },
                 {
                   q: 'How does your AI duplicate detection and triage work?',
-                  a: 'It combines n-gram tokenization and Jaccard cosine similarity across bug summaries, tags, and descriptions. For crash logs, our multi-language stack trace parser extracts culprit file paths and line numbers across Python, JS, Go, Rust, and C/C++ ASAN logs to auto-predict component routing and severity.',
+                  a: 'Each issue is reduced to a set of lowercased word tokens (punctuation stripped, tokens of two characters or fewer dropped) and scored against the candidate with Jaccard similarity — the size of the overlap divided by the size of the union. Title and full-text scores are weighted equally, and anything at or above 0.18 is surfaced. For crash logs, the traceback parser extracts culprit file paths and line numbers across Python, JS, Go, Rust, and C/C++ ASAN output to predict component routing and severity.',
                 },
                 {
                   q: 'What is the purpose of the Flags system (? + - X)?',

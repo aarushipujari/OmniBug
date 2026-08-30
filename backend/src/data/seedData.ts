@@ -1,4 +1,14 @@
+import { hashPassword } from '../middleware/auth.js';
 import { User, Product, Bug, AuditLogEntry } from '../types/index.js';
+
+/**
+ * Shared demo credential. Every seeded account uses it, and the sign-in screen
+ * shows it, so evaluating the product costs one click while the server still
+ * performs a genuine password verification.
+ */
+export const DEMO_PASSWORD = 'omnibug-demo';
+
+const DEMO_HASH = hashPassword(DEMO_PASSWORD);
 
 export const SEED_USERS: User[] = [
   {
@@ -6,6 +16,7 @@ export const SEED_USERS: User[] = [
     name: 'Alex Rivera (Lead Architect)',
     email: 'alex.rivera@omnibug.dev',
     role: 'maintainer',
+    passwordHash: DEMO_HASH,
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   },
   {
@@ -13,6 +24,7 @@ export const SEED_USERS: User[] = [
     name: 'Elena Rostova (Security Engineer)',
     email: 'elena.rostova@omnibug.dev',
     role: 'developer',
+    passwordHash: DEMO_HASH,
     avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
   },
   {
@@ -20,6 +32,7 @@ export const SEED_USERS: User[] = [
     name: 'Marcus Chen (Core Engine Dev)',
     email: 'marcus.chen@omnibug.dev',
     role: 'developer',
+    passwordHash: DEMO_HASH,
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
   },
   {
@@ -27,6 +40,7 @@ export const SEED_USERS: User[] = [
     name: 'Sarah Jenkins (QA Lead)',
     email: 'sarah.jenkins@omnibug.dev',
     role: 'qa',
+    passwordHash: DEMO_HASH,
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
   },
   {
@@ -34,6 +48,7 @@ export const SEED_USERS: User[] = [
     name: 'David Kim (Frontend Specialist)',
     email: 'david.kim@omnibug.dev',
     role: 'developer',
+    passwordHash: DEMO_HASH,
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
   },
   {
@@ -41,6 +56,7 @@ export const SEED_USERS: User[] = [
     name: 'Triage Admin',
     email: 'admin@omnibug.dev',
     role: 'admin',
+    passwordHash: DEMO_HASH,
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
   },
 ];

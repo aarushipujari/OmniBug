@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, Product, Bug } from '../types/index.js';
-import { api } from '../services/api.js';
+import { api, getSessionToken, UnauthenticatedError } from '../services/api.js';
 
 export type AppView = 'table' | 'kanban' | 'graph' | 'triage' | 'milestones' | 'analytics';
 
@@ -22,8 +22,10 @@ export interface ToastNotification {
 }
 
 interface AppContextType {
-  currentUser: User;
-  setCurrentUser: (user: User) => void;
+  currentUser: User | null;
+  setCurrentUser: (user: User | null) => void;
+  isRestoringSession: boolean;
+  signOut: () => void;
   users: User[];
   
   activeView: AppView;
@@ -69,13 +71,13 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<User>({
-    id: 'usr-1',
-    name: 'Alex Rivera (Lead Architect)',
-    email: 'alex.rivera@omnibug.dev',
-    role: 'maintainer',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  });
+  // No identity until the server has verified a credential. The client used to
+  // start life hardcoded as a maintainer, which is what made every permission
+  // boundary in the product cosmetic.
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Only a stored token makes this a restore; starting at true and
+  // immediately setting it to false cost an extra render pass.
+  const [isRestoringSession, setIsRestoringSession] = useState(() => Boolean(getSessionToken()));
 
   const [activeView, setActiveView] = useState<AppView>('table');
   const [products, setProducts] = useState<Product[]>([]);
@@ -181,15 +183,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUsers(usersRes);
       }
     } catch (err) {
-      console.error('Failed to load data:', err);
+      if (err instanceof UnauthenticatedError) {
+        setCurrentUser(null);
+      } else {
+        console.error('Failed to load data:', err);
+      }
     } finally {
       setIsLoadingBugs(false);
     }
   }, [activeProductId, searchQuery]);
 
+  // Restore a stored session before rendering the workspace.
   useEffect(() => {
+    let cancelled = false;
+    if (!getSessionToken()) return;
+    api
+      .getMe()
+      .then(res => {
+        if (!cancelled) setCurrentUser(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsRestoringSession(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const signOut = useCallback(() => {
+    api.logout();
+    setCurrentUser(null);
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
     refreshData();
-  }, [refreshData]);
+  }, [refreshData, currentUser]);
 
   // Global hotkeys (Ctrl+K / Cmd+K, C for new bug outside Speed Triage, Escape to close modals)
   useEffect(() => {
@@ -240,6 +272,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         currentUser,
         setCurrentUser,
+        isRestoringSession,
+        signOut,
         users,
         activeView,
         setActiveView,
@@ -280,3 +314,18 @@ export const useApp = () => {
   if (!context) throw new Error('useApp must be used within an AppProvider');
   return context;
 };
+
+/**
+ * The signed-in user, guaranteed non-null.
+ *
+ * `App` renders the sign-in screen until a session exists, so anything inside
+ * the workspace can rely on this. It throws rather than returning a placeholder
+ * so a future refactor that renders a view outside the gate fails loudly.
+ */
+export function useCurrentUser() {
+  const { currentUser } = useApp();
+  if (!currentUser) {
+    throw new Error('useCurrentUser was called outside an authenticated view.');
+  }
+  return currentUser;
+}

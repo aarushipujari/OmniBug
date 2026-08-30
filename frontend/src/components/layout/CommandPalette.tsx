@@ -36,15 +36,12 @@ export const CommandPalette: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // App mounts this only while the palette is open, so the query and selection
+  // start empty on their own; this effect only moves focus.
   useEffect(() => {
-    if (isCommandPaletteOpen) {
-      setQuery('');
-      setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [isCommandPaletteOpen]);
-
-  if (!isCommandPaletteOpen) return null;
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Actions list
   const actions: { id: string; category: string; title: string; icon: React.ReactNode; run: () => void }[] = [
@@ -219,16 +216,26 @@ export const CommandPalette: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-start justify-center pt-20 p-4 animate-in fade-in duration-100"
-      onClick={() => setIsCommandPaletteOpen(false)}
+      className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 animate-in fade-in duration-100"
       role="dialog"
       aria-modal="true"
       aria-label="Command Palette Quick Launcher"
     >
-      <div
-        className="w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
+      {/*
+        The backdrop is a button rather than a div with an onClick. As a div it
+        was reachable only with a pointer, and the dismissal it offered did not
+        exist for anyone navigating by keyboard. Escape closes the palette too;
+        this element is hidden from assistive technology so it does not announce
+        a second, redundant control.
+      */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        onClick={() => setIsCommandPaletteOpen(false)}
+        className="absolute inset-0 w-full h-full bg-black/75 backdrop-blur-xs cursor-default"
+      />
+      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Search Header */}
         <div className="px-4 py-3 border-b border-slate-800 flex items-center gap-3 bg-slate-850">
           <Search className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -253,7 +260,7 @@ export const CommandPalette: React.FC = () => {
         {/* Results List */}
         <div className="max-h-80 overflow-y-auto p-2 space-y-1">
           {filteredItems.length === 0 ? (
-            <div className="px-4 py-8 text-center text-xs text-slate-500">
+            <div className="px-4 py-8 text-center text-xs text-slate-400">
               No matching commands or issues found for "{query}"
             </div>
           ) : (
@@ -273,7 +280,7 @@ export const CommandPalette: React.FC = () => {
                   <div className="flex items-center gap-3 truncate">
                     {item.icon}
                     <div className="truncate">
-                      <span className="text-[10px] uppercase font-mono text-slate-500 mr-2">
+                      <span className="text-[10px] uppercase font-mono text-slate-400 mr-2">
                         [{item.category}]
                       </span>
                       <span>{item.title}</span>
@@ -287,7 +294,7 @@ export const CommandPalette: React.FC = () => {
         </div>
 
         {/* Footer shortcuts */}
-        <div className="px-4 py-2 border-t border-slate-800/80 bg-slate-950/60 text-[11px] text-slate-500 flex items-center justify-between font-mono">
+        <div className="px-4 py-2 border-t border-slate-800/80 bg-slate-950/60 text-[11px] text-slate-400 flex items-center justify-between font-mono">
           <div className="flex items-center gap-3">
             <span><kbd className="bg-slate-800 px-1 rounded">↑↓</kbd> to navigate</span>
             <span><kbd className="bg-slate-800 px-1 rounded">↵</kbd> to select</span>

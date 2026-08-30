@@ -48,7 +48,7 @@ export const MilestoneView: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
               <h3 className="font-bold text-sm text-slate-200">{product.name}</h3>
-              <span className="text-[11px] text-slate-500 font-mono">({product.milestones.length} milestones)</span>
+              <span className="text-[11px] text-slate-400 font-mono">({product.milestones.length} milestones)</span>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -90,7 +90,7 @@ export const MilestoneView: React.FC = () => {
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                          <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
                           <span>Target: {m.targetDate}</span>
                         </div>
                       </div>
@@ -118,19 +118,19 @@ export const MilestoneView: React.FC = () => {
                       {/* Metrics stats */}
                       <div className="grid grid-cols-3 gap-2 text-xs font-mono bg-slate-950 p-3 rounded-xl border border-slate-850 shadow-inner">
                         <div>
-                          <span className="text-[10px] text-slate-500 block uppercase font-sans">Open Issues</span>
+                          <span className="text-[10px] text-slate-400 block uppercase font-sans">Open Issues</span>
                           <span className="font-bold text-slate-200">
                             {milestoneBugs.length - closedBugs.length}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-500 block uppercase font-sans">Active Blockers</span>
+                          <span className="text-[10px] text-slate-400 block uppercase font-sans">Active Blockers</span>
                           <span className={`font-bold ${blockerBugs.length > 0 ? 'text-red-400' : 'text-slate-400'}`}>
                             {blockerBugs.length}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-500 block uppercase font-sans">Remaining Work</span>
+                          <span className="text-[10px] text-slate-400 block uppercase font-sans">Remaining Work</span>
                           <span className="font-bold text-amber-300">
                             {remainingHours}h / {totalHours}h
                           </span>
@@ -141,15 +141,18 @@ export const MilestoneView: React.FC = () => {
                     {/* Linked Bugs */}
                     {milestoneBugs.length > 0 && (
                       <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-                        <div className="text-[10px] uppercase font-mono font-bold text-slate-500">
+                        <div className="text-[10px] uppercase font-mono font-bold text-slate-400">
                           Target Bugs ({milestoneBugs.length})
                         </div>
                         <div className="space-y-1 max-h-36 overflow-y-auto">
                           {milestoneBugs.map(bug => (
-                            <div
+                            /* Opens an issue, so it is a button; as a div it was
+                               unreachable without a pointer. */
+                            <button
+                              type="button"
                               key={bug.id}
                               onClick={() => setSelectedBugId(bug.id)}
-                              className="p-2 bg-slate-850/80 hover:bg-slate-800 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors duration-150"
+                              className="w-full text-left p-2 bg-slate-850/80 hover:bg-slate-800 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors duration-150"
                             >
                               <div className="flex items-center gap-2 truncate">
                                 <span className="font-mono font-bold text-emerald-400 text-[11px]">
@@ -161,7 +164,7 @@ export const MilestoneView: React.FC = () => {
                                 <SeverityBadge severity={bug.severity} size="sm" />
                                 <StatusBadge status={bug.status} size="sm" />
                               </div>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>

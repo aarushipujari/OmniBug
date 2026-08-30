@@ -38,10 +38,12 @@ export interface TriagePrediction {
 }
 
 /**
- * Deterministic Smart Triage & AST Traceback Engine
+ * Deterministic triage: pattern-based traceback parsing and token similarity.
  * 
- * Provides deterministic AST traceback parsing, heuristic root-cause inference,
- * NLP Jaccard duplicate detection, and automated reproduction test synthesis.
+ * Traceback frames are matched with per-language regular expressions — there is
+ * no parser or syntax tree involved, and calling it one would overstate it.
+ * Provides frame extraction, heuristic root-cause inference,
+ * Jaccard token-set duplicate detection, and automated reproduction test synthesis.
  * Engineered for sub-millisecond local execution without cloud API dependencies.
  */
 export class AITriageService {
@@ -361,20 +363,53 @@ export class AITriageService {
       ? 'Introduce state guard assertions before state transition and validate buffer payload boundaries against packet length.'
       : 'Apply defensive null/empty bounds checking and ensure connection handles are cleanly closed in finally block.';
 
-    const suggestedTestCase = `describe('Bug Reproduction Test (${title.slice(0, 30)}...)', () => {
-  it('should handle boundary conditions and not throw or crash', async () => {
-    // 1. Arrange test fixture
-    const fixture = createTestEnvironment();
-    
-    // 2. Act: Trigger condition described in bug report
-    const result = await fixture.executeWithBoundaryInput({
-      reproducePayload: '${title.replace(/'/g, "\\'")}',
-      targetCulpritFile: '${stackTrace?.culpritFile || 'unknown'}'
-    });
+    /*
+     * A runnable characterisation test, not a template.
+     *
+     * The previous version called `createTestEnvironment()` — a helper that
+     * exists nowhere — so it could never have executed; the button next to it
+     * printed fixed "2 passed" output without running anything. This asserts
+     * against the triage output itself, which is real data, so running it
+     * genuinely passes or fails. `fixture` is injected by the sandbox.
+     */
+    // Numbers must stay numbers: `toBe` is Object.is, so a stringified line
+    // number would never match the number the parser actually produced.
+    const q = (v: string | number | undefined) =>
+      v === undefined ? 'undefined' : JSON.stringify(v);
 
-    // 3. Assert: Verify state remains consistent and no fatal violation occurred
-    expect(result.isSuccessful).toBe(true);
-    expect(result.errorState).toBeUndefined();
+    const suggestedTestCase = stackTrace
+      ? `describe('Reproduction — ${escapeForTemplate(title)}', () => {
+  it('extracts the culprit frame from the ${stackTrace.detectedLanguage} traceback', () => {
+    expect(fixture.parsedStackTrace).toBeDefined();
+    expect(fixture.parsedStackTrace.culpritFile).toBe(${q(stackTrace.culpritFile)});
+    expect(fixture.parsedStackTrace.culpritLine).toBe(${q(stackTrace.culpritLine)});
+  });
+
+  it('classifies the failure as ${stackTrace.errorType}', () => {
+    expect(fixture.parsedStackTrace.errorType).toBe(${q(stackTrace.errorType)});
+    expect(fixture.parsedStackTrace.detectedLanguage).toBe(${q(stackTrace.detectedLanguage)});
+  });
+
+  it('walks past framework frames to application code', () => {
+    const appFrames = fixture.parsedStackTrace.frames.filter(f => f.isAppCode);
+    expect(appFrames.length).toBeGreaterThan(0);
+    expect(fixture.parsedStackTrace.frames.length).toBeGreaterThan(0);
+  });
+
+  it('routes the defect to a component and a severity', () => {
+    expect(fixture.suggestedComponentId).toBeTruthy();
+    expect(fixture.suggestedSeverity).toBe(${q(suggestedSeverity)});
+  });
+});`
+      : `describe('Reproduction — ${escapeForTemplate(title)}', () => {
+  it('classifies the report without a traceback to fall back on', () => {
+    expect(fixture.parsedStackTrace).toBeUndefined();
+    expect(fixture.suggestedSeverity).toBe(${q(suggestedSeverity)});
+    expect(fixture.suggestedComponentId).toBeTruthy();
+  });
+
+  it('flags the security disposition it inferred from the text', () => {
+    expect(fixture.isSecuritySensitive).toBe(${isSecuritySensitive});
   });
 });`;
 
@@ -391,6 +426,15 @@ export class AITriageService {
       parsedStackTrace: stackTrace,
     };
   }
+}
+
+
+/** Escapes a value for safe interpolation into the generated test source. */
+function escapeForTemplate(value: string): string {
+  return value
+    .slice(0, 60)
+    .replace(/[\\\`$']/g, '_')
+    .replace(/[\r\n]+/g, ' ');
 }
 
 export const DeterministicTriageService = AITriageService;

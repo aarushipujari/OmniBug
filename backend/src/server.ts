@@ -66,9 +66,15 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 OmniBug Backend Server running at http://localhost:${PORT}`);
-  console.log(`📡 REST API endpoint available at http://localhost:${PORT}/api`);
-});
+// Importing this module must not bind a port, so the API can be mounted on an
+// ephemeral port by the test suite. Nothing exercised the HTTP layer before,
+// which is why an authentication bypass and an unvalidated update path both
+// shipped while every unit test passed.
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`🚀 OmniBug Backend Server running at http://localhost:${PORT}`);
+    console.log(`📡 REST API endpoint available at http://localhost:${PORT}/api`);
+  });
+}
 
 export default app;

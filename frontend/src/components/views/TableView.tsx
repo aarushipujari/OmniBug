@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../../context/AppContext.js';
+import { useApp, useCurrentUser } from '../../context/AppContext.js';
 import { Bug, BugStatus } from '../../types/index.js';
 import { StatusBadge } from '../common/StatusBadge.js';
 import { SeverityBadge } from '../common/SeverityBadge.js';
@@ -26,12 +26,12 @@ export const TableView: React.FC = () => {
     bugs,
     isLoadingBugs,
     setSelectedBugId,
-    currentUser,
     refreshData,
     toast,
     setSearchQuery,
     setIsCreateModalOpen,
   } = useApp();
+  const currentUser = useCurrentUser();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortField, setSortField] = useState<keyof Bug>('updatedAt');
@@ -73,7 +73,7 @@ export const TableView: React.FC = () => {
   const handleBulkStatusChange = async (targetStatus: BugStatus) => {
     try {
       const resolution = targetStatus === 'RESOLVED' ? 'FIXED' : undefined;
-      const count = await api.bulkUpdate(selectedIds, { status: targetStatus, resolution }, currentUser);
+      const count = await api.bulkUpdate(selectedIds, { status: targetStatus, resolution });
       toast('Bulk Update Complete', `Updated ${count} issues to ${targetStatus}`, 'success');
       setSelectedIds([]);
       setBulkActionOpen(false);
@@ -87,8 +87,7 @@ export const TableView: React.FC = () => {
     try {
       const count = await api.bulkUpdate(
         selectedIds,
-        { assigneeId: currentUser.id, assigneeName: currentUser.name },
-        currentUser
+        { assigneeId: currentUser.id, assigneeName: currentUser.name }
       );
       toast('Assigned to You', `Assigned ${count} issues to ${currentUser.name}`, 'success');
       setSelectedIds([]);
@@ -142,7 +141,7 @@ export const TableView: React.FC = () => {
                     <User className="w-3.5 h-3.5 text-emerald-400" /> Assign to Me
                   </button>
                   <div className="border-t border-slate-800 my-1" />
-                  <div className="text-[10px] font-bold text-slate-500 px-2.5 py-0.5 uppercase font-mono">Set Status</div>
+                  <div className="text-[10px] font-bold text-slate-400 px-2.5 py-0.5 uppercase font-mono">Set Status</div>
                   <button
                     onClick={() => handleBulkStatusChange('IN_PROGRESS')}
                     className="w-full text-left px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
@@ -199,7 +198,7 @@ export const TableView: React.FC = () => {
                 >
                   <div className="flex items-center gap-1">
                     <span>ID</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-500 opacity-40 group-hover/th:opacity-100 group-hover/th:text-emerald-400 transition-all" />
+                    <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-40 group-hover/th:opacity-100 group-hover/th:text-emerald-400 transition-all" />
                   </div>
                 </th>
                 <th
@@ -208,7 +207,7 @@ export const TableView: React.FC = () => {
                 >
                   <div className="flex items-center gap-1">
                     <span>Summary & Title</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-500 opacity-40 group-hover/th:opacity-100 group-hover/th:text-emerald-400 transition-all" />
+                    <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-40 group-hover/th:opacity-100 group-hover/th:text-emerald-400 transition-all" />
                   </div>
                 </th>
                 <th
@@ -263,12 +262,25 @@ export const TableView: React.FC = () => {
                     }`}
                   >
                     {/* Checkbox */}
-                    <td className="px-3 py-3 text-center" onClick={e => toggleSelect(bug.id, e)}>
-                      <button className="text-slate-600 hover:text-slate-300">
+                    <td className="px-3 py-3 text-center">
+                      {/*
+                        Announced as a checkbox with a name and a state. It was
+                        an unlabelled button whose only content was an icon, so
+                        assistive technology reported neither what it selected
+                        nor whether it was selected.
+                      */}
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        aria-label={`Select issue #${bug.bugNumber}: ${bug.title}`}
+                        onClick={e => toggleSelect(bug.id, e)}
+                        className="text-slate-400 hover:text-slate-200 rounded"
+                      >
                         {isSelected ? (
-                          <CheckSquare className="w-4 h-4 text-emerald-400" />
+                          <CheckSquare className="w-4 h-4 text-emerald-400" aria-hidden="true" />
                         ) : (
-                          <Square className="w-4 h-4 text-slate-600 group-hover:text-slate-400" />
+                          <Square className="w-4 h-4 text-slate-400 group-hover:text-slate-200" aria-hidden="true" />
                         )}
                       </button>
                     </td>
@@ -293,7 +305,7 @@ export const TableView: React.FC = () => {
                             {bug.title}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
                           {bug.targetMilestone && (
                             <span className="text-slate-400 bg-slate-850 px-1.5 py-0.2 rounded border border-slate-800">
                               {bug.targetMilestone}
@@ -326,7 +338,7 @@ export const TableView: React.FC = () => {
                     {/* Component */}
                     <td className="px-3 py-3">
                       <div className="text-slate-300 font-medium truncate">{bug.componentName}</div>
-                      <div className="text-[10px] text-slate-500 font-mono truncate">{bug.productName}</div>
+                      <div className="text-[10px] text-slate-400 font-mono truncate">{bug.productName}</div>
                     </td>
 
                     {/* Status */}
@@ -369,7 +381,7 @@ export const TableView: React.FC = () => {
                     </td>
 
                     {/* Updated */}
-                    <td className="px-3 py-3 font-mono text-[11px] text-slate-500 text-right whitespace-nowrap">
+                    <td className="px-3 py-3 font-mono text-[11px] text-slate-400 text-right whitespace-nowrap">
                       {new Date(bug.updatedAt).toLocaleDateString(undefined, {
                         month: 'short',
                         day: 'numeric',

@@ -140,7 +140,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
                   }`}
                 >
                   {/* Line numbers */}
-                  <div className="flex select-none text-[11px] text-slate-500 bg-slate-950/40 border-r border-slate-800 text-right shrink-0">
+                  <div className="flex select-none text-[11px] text-slate-400 bg-slate-950/40 border-r border-slate-800 text-right shrink-0">
                     <span className="w-10 px-2 py-0.5">{line.oldLineNumber ?? ''}</span>
                     <span className="w-10 px-2 py-0.5 border-l border-slate-850">{line.newLineNumber ?? ''}</span>
                   </div>
@@ -166,7 +166,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
               {parsedLines.map((line, idx) => {
                 if (line.type === 'meta' || line.type === 'header') {
                   return (
-                    <div key={`left-${idx}`} className="px-3 py-1 text-slate-500 bg-slate-950/30 truncate">
+                    <div key={`left-${idx}`} className="px-3 py-1 text-slate-400 bg-slate-950/30 truncate">
                       {line.content}
                     </div>
                   );
@@ -185,7 +185,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
                     key={`left-${idx}`}
                     className={`flex items-start ${isDel ? 'bg-rose-950/30 text-rose-300' : 'text-slate-300'}`}
                   >
-                    <span className="w-9 px-2 py-0.5 text-right text-slate-500 select-none border-r border-slate-800 shrink-0">
+                    <span className="w-9 px-2 py-0.5 text-right text-slate-400 select-none border-r border-slate-800 shrink-0">
                       {line.oldLineNumber ?? ''}
                     </span>
                     <span className="w-4 text-center py-0.5 select-none font-bold shrink-0">{isDel ? '-' : ' '}</span>
@@ -203,7 +203,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
               {parsedLines.map((line, idx) => {
                 if (line.type === 'meta' || line.type === 'header') {
                   return (
-                    <div key={`right-${idx}`} className="px-3 py-1 text-slate-500 bg-slate-950/30 truncate">
+                    <div key={`right-${idx}`} className="px-3 py-1 text-slate-400 bg-slate-950/30 truncate">
                       {line.content}
                     </div>
                   );
@@ -222,7 +222,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ patchContent, fileName =
                     key={`right-${idx}`}
                     className={`flex items-start ${isAdd ? 'bg-emerald-950/30 text-emerald-300' : 'text-slate-300'}`}
                   >
-                    <span className="w-9 px-2 py-0.5 text-right text-slate-500 select-none border-r border-slate-800 shrink-0">
+                    <span className="w-9 px-2 py-0.5 text-right text-slate-400 select-none border-r border-slate-800 shrink-0">
                       {line.newLineNumber ?? ''}
                     </span>
                     <span className="w-4 text-center py-0.5 select-none font-bold shrink-0">{isAdd ? '+' : ' '}</span>

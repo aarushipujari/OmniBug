@@ -14,9 +14,9 @@
   "keywords": [
     "bugzilla",
     "bug-tracker",
-    "ast-parser",
     "kahn-algorithm",
-    "systems-engineering"
+    "systems-engineering",
+    "traceback-parser"
   ],
   "author": "Aarushi Pujari",
   "license": "MIT"

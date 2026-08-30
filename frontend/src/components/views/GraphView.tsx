@@ -58,6 +58,31 @@ export const GraphView: React.FC = () => {
     setIsDragging(false);
   };
 
+  /*
+   * The canvas could only be panned by dragging, so its entire content was
+   * unreachable without a pointer. Arrow keys pan; Home recentres. The element
+   * is a focusable group with a name, so it is announced and can be tabbed to.
+   */
+  const PAN_STEP = 60;
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const step = e.shiftKey ? PAN_STEP * 3 : PAN_STEP;
+    const moves: Record<string, { x: number; y: number }> = {
+      ArrowLeft: { x: step, y: 0 },
+      ArrowRight: { x: -step, y: 0 },
+      ArrowUp: { x: 0, y: step },
+      ArrowDown: { x: 0, y: -step },
+    };
+    if (e.key === 'Home') {
+      e.preventDefault();
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    const move = moves[e.key];
+    if (!move) return;
+    e.preventDefault();
+    setPan(current => ({ x: current.x + move.x, y: current.y + move.y }));
+  };
+
   const getNodePositions = (nodes: GraphNode[]) => {
     const levelGroups: Record<number, GraphNode[]> = {};
     nodes.forEach(n => {
@@ -107,13 +132,25 @@ export const GraphView: React.FC = () => {
   const positions = getNodePositions(graphData.nodes);
 
   return (
+    /*
+      `role="application"` is the correct ARIA role for a surface that consumes
+      the arrow keys itself, and it is what makes the panning above reachable
+      without a pointer. jsx-a11y classifies the role as non-interactive, so
+      these two rules fire on a pattern that is the fix rather than the defect.
+    */
+    /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */
     <div
       ref={containerRef}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onKeyDown={handleKeyDown}
+      role="application"
+      tabIndex={0}
+      aria-label="Dependency graph canvas. Use the arrow keys to pan, Shift with an arrow key to pan faster, and Home to recentre."
       className="flex-1 flex flex-col min-w-0 bg-slate-950 overflow-hidden relative select-none font-sans cursor-grab active:cursor-grabbing animate-in fade-in duration-200"
     >
+      {/* eslint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
       {/* Top Header & Graph Controls */}
       <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md flex items-center justify-between z-10 shadow-xs">
         <div className="flex items-center gap-3">

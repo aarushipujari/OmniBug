@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../../context/AppContext.js';
+import { useApp, useCurrentUser } from '../../context/AppContext.js';
 import {
   Bug as BugIcon,
   Search,
@@ -18,7 +18,6 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
   const {
-    currentUser,
     setCurrentUser,
     users,
     products,
@@ -31,6 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
     notifications,
     toast,
   } = useApp();
+  const currentUser = useCurrentUser();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
@@ -56,7 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold tracking-tight text-white font-sans text-sm md:text-base">OmniBug</span>
+              <h1 className="font-bold tracking-tight text-white font-sans text-sm md:text-base">OmniBug</h1>
               <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 font-semibold border border-emerald-500/30">
                 v2.0
               </span>
@@ -81,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
 
           {isProductMenuOpen && (
             <div className="absolute top-full left-0 mt-1.5 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-1.5 z-50 animate-in fade-in duration-100">
-              <div className="text-[10px] font-semibold text-slate-500 px-2.5 py-1 uppercase tracking-wider font-mono">
+              <div className="text-[10px] font-semibold text-slate-400 px-2.5 py-1 uppercase tracking-wider font-mono">
                 Product Workspace Scope
               </div>
               <button
@@ -125,7 +125,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
       {/* Middle: Tokenized Search Bar with Focus Ring */}
       <div className="flex-1 max-w-xl mx-4 hidden md:flex items-center gap-2">
         <div className="relative w-full group">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors duration-150">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-400 transition-colors duration-150">
             <Search className="w-3.5 h-3.5" />
           </div>
           <input
@@ -183,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
         <button
           onClick={() => setIsCreateModalOpen(true)}
           aria-label="Create new bug report (C)"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm shadow-emerald-950/50 transition-all duration-150 active:scale-[0.98]"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-medium text-xs shadow-sm shadow-emerald-950/50 transition-all duration-150 active:scale-[0.98]"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>New Bug</span>
@@ -237,7 +237,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications }) => {
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                   <UserCheck className="w-3.5 h-3.5 text-emerald-400" /> Switch Active Persona
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5 font-normal">
+                <div className="text-[11px] text-slate-400 mt-0.5 font-normal">
                   Simulate permissions, reviewer roles & flags
                 </div>
               </div>

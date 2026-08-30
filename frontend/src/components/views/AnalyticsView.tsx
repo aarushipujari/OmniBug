@@ -159,7 +159,7 @@ export const AnalyticsView: React.FC = () => {
             <div className={`text-2xl font-bold font-mono mt-2 tracking-tight ${card.textColor}`}>
               {card.value}
             </div>
-            <div className="text-[10px] text-slate-500 mt-1 font-normal truncate">
+            <div className="text-[10px] text-slate-400 mt-1 font-normal truncate">
               {card.subtitle}
             </div>
           </div>
@@ -173,7 +173,7 @@ export const AnalyticsView: React.FC = () => {
             <TrendingUp className="w-4 h-4 text-cyan-400" />
             <h3 className="font-bold text-sm text-slate-200">Executive Decision Support & 1-Click Drill-Downs</h3>
           </div>
-          <span className="text-[10px] font-mono text-slate-500">Live Telemetry Pipeline</span>
+          <span className="text-[10px] font-mono text-slate-400">Live Telemetry Pipeline</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -297,7 +297,7 @@ export const AnalyticsView: React.FC = () => {
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
                     <div className="text-xs font-mono font-bold text-emerald-400">{comp.healthScore}%</div>
-                    <div className="text-[10px] text-slate-500 font-mono">Health</div>
+                    <div className="text-[10px] text-slate-400 font-mono">Health</div>
                   </div>
                   <div className="w-20 h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800/80 p-0.5">
                     <div
@@ -404,18 +404,21 @@ export const AnalyticsView: React.FC = () => {
             <Activity className="w-4 h-4 text-emerald-400" />
             <span>System-wide Micro-Audit Trail Stream</span>
           </h3>
-          <span className="text-[11px] font-mono text-slate-500">Immutable Ledger</span>
+          <span className="text-[11px] font-mono text-slate-400">Immutable Ledger</span>
         </div>
 
         <div className="space-y-1.5 max-h-56 overflow-y-auto">
           {recentAuditLogs.map((log: any) => (
-            <div
+            /* An audit row opens an issue, so it is a button — as a div it had
+               no tab stop and no keyboard activation at all. */
+            <button
+              type="button"
               key={log.id}
               onClick={() => setSelectedBugId(log.bugId)}
-              className="p-2.5 bg-slate-950/90 hover:bg-slate-900 rounded-xl border border-slate-850 hover:border-slate-700 text-xs flex items-center justify-between gap-3 cursor-pointer transition-all duration-150 font-mono group"
+              className="w-full text-left p-2.5 bg-slate-950/90 hover:bg-slate-900 rounded-xl border border-slate-850 hover:border-slate-700 text-xs flex items-center justify-between gap-3 cursor-pointer transition-all duration-150 font-mono group"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="text-slate-500 text-[10px] shrink-0 font-mono">
+                <span className="text-slate-400 text-[10px] shrink-0 font-mono">
                   {new Date(log.timestamp).toLocaleTimeString()}
                 </span>
                 <span className="text-emerald-400 font-bold shrink-0">{log.actorName}</span>
@@ -423,10 +426,10 @@ export const AnalyticsView: React.FC = () => {
                   {log.changes.map((c: any) => `${c.field}: ${c.newValue}`).join(', ')}
                 </div>
               </div>
-              <span className="text-[11px] text-slate-500 group-hover:text-emerald-400 font-mono shrink-0 flex items-center gap-0.5 transition-colors">
+              <span className="text-[11px] text-slate-400 group-hover:text-emerald-400 font-mono shrink-0 flex items-center gap-0.5 transition-colors">
                 {log.bugId} <ChevronRight className="w-3 h-3" />
               </span>
-            </div>
+            </button>
           ))}
         </div>
       </div>

@@ -20,6 +20,8 @@ export interface DatabaseSchema {
 class Store {
   private data: DatabaseSchema;
   private inMemoryOnly: boolean = process.env.NODE_ENV === 'test';
+  private writeTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingWrite = false;
 
   constructor() {
     this.data = {
@@ -42,9 +44,10 @@ class Store {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        const parsed = JSON.parse(raw);
+        const parsed = JSON.parse(raw) as Partial<DatabaseSchema>;
         if (parsed.bugs && parsed.products) {
-          this.data = parsed;
+          this.data = { ...this.data, ...parsed } as DatabaseSchema;
+          this.reconcileUsersWithSeed();
         }
       }
     } catch (e) {
@@ -52,15 +55,77 @@ class Store {
     }
   }
 
+  /**
+   * Reconcile persisted users with the seed definitions.
+   *
+   * The snapshot on disk predates whatever the current build knows about, and
+   * `loadFromDisk` replaces the whole dataset. When credentials were introduced
+   * every persisted user came back without a `passwordHash`, so no one could
+   * sign in until the file was deleted by hand. Server-owned fields are
+   * therefore restored from the seed rather than trusted from the snapshot.
+   */
+  private reconcileUsersWithSeed() {
+    const seedById = new Map(SEED_USERS.map(u => [u.id, u]));
+
+    this.data.users = (this.data.users ?? []).map(persisted => {
+      const seed = seedById.get(persisted.id);
+      return seed ? { ...persisted, passwordHash: seed.passwordHash ?? persisted.passwordHash } : persisted;
+    });
+
+    // Accounts added to the seed after the snapshot was taken.
+    for (const seed of SEED_USERS) {
+      if (!this.data.users.some(u => u.id === seed.id)) this.data.users.push({ ...seed });
+    }
+  }
+
+  /**
+   * Requests a persist. Writes are coalesced rather than performed inline.
+   *
+   * Every mutating helper called this, and it serialised and wrote the whole
+   * database synchronously each time. A bulk update over N issues therefore
+   * performed 2N full-file writes — one per issue and one per audit entry —
+   * with the event loop blocked for all of them, so the cost of a single
+   * request grew with both the size of the selection and the size of the
+   * accumulated history. They now collapse into one write on the next tick.
+   *
+   * The tradeoff is a window of a few milliseconds in which a crash loses the
+   * most recent mutation. `flushToDisk` runs on exit and on the fatal signals
+   * so an ordinary shutdown never hits it, and it stays available for a caller
+   * that needs the write to have landed before it returns.
+   */
   public saveToDisk() {
     if (this.inMemoryOnly || process.env.NODE_ENV === 'test') {
       return; // Never write to disk during automated test runs
     }
+    this.pendingWrite = true;
+    if (this.writeTimer) return;
+    this.writeTimer = setTimeout(() => {
+      this.writeTimer = null;
+      this.flushToDisk();
+    }, 0);
+    // Do not hold the process open purely for a queued write.
+    this.writeTimer.unref?.();
+  }
+
+  /** Performs the write immediately, if one is outstanding. */
+  public flushToDisk() {
+    if (this.inMemoryOnly || process.env.NODE_ENV === 'test') return;
+    if (this.writeTimer) {
+      clearTimeout(this.writeTimer);
+      this.writeTimer = null;
+    }
+    if (!this.pendingWrite) return;
+    this.pendingWrite = false;
     try {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
       }
-      fs.writeFileSync(DB_FILE, JSON.stringify(this.data, null, 2), 'utf-8');
+      // Write to a sibling file and rename. `writeFileSync` truncates the
+      // target before writing, so a crash mid-write previously destroyed the
+      // only copy of the database.
+      const tempPath = `${DB_FILE}.tmp`;
+      fs.writeFileSync(tempPath, JSON.stringify(this.data), 'utf-8');
+      fs.renameSync(tempPath, DB_FILE);
     } catch (e) {
       console.error('Failed to persist database to disk:', e);
     }
@@ -221,3 +286,15 @@ class Store {
 }
 
 export const store = new Store();
+
+// A queued write must not be lost to an ordinary shutdown.
+if (process.env.NODE_ENV !== 'test') {
+  const flush = () => store.flushToDisk();
+  process.once('exit', flush);
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.once(signal, () => {
+      flush();
+      process.exit(0);
+    });
+  }
+}

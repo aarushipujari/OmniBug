@@ -1,10 +1,70 @@
 import { Request, Response } from 'express';
 import { store } from '../data/store.js';
-import { Bug, FieldChange, Comment, WorkLog, Attachment } from '../types/index.js';
+import { hasCapability } from '../middleware/auth.js';
+import { Bug, BugStatus, BugResolution, FieldChange, Comment, WorkLog, Attachment } from '../types/index.js';
 import { StateMachineService, VALID_STATUS_TRANSITIONS } from '../services/stateMachine.js';
 import { DependencyGraphService } from '../services/dependencyGraph.js';
 import { BugzillaExportImportService } from '../services/bugzillaExportImport.js';
 import { SlashCommandService } from '../services/slashCommands.js';
+
+
+/**
+ * Fields a client may change through `PATCH /bugs/:id`.
+ *
+ * Identity (`id`, `bugNumber`), timestamps and derived counters are deliberately
+ * absent: they are owned by the server.
+ */
+export const MUTABLE_BUG_FIELDS = [
+  'title', 'description', 'status', 'resolution', 'severity', 'priority',
+  'assigneeId', 'productId', 'componentId', 'version', 'targetMilestone',
+  'tags', 'ccList', 'watchers', 'dependsOn', 'blocks', 'seeAlso',
+  'estimatedHours', 'remainingHours', 'isSecuritySensitive', 'duplicateOfId',
+] as const;
+
+const VALID_STATUSES = ['UNCONFIRMED', 'NEW', 'IN_PROGRESS', 'IN_REVIEW', 'RESOLVED', 'VERIFIED', 'CLOSED', 'REOPENED'];
+const VALID_SEVERITIES = ['blocker', 'critical', 'major', 'normal', 'minor', 'trivial', 'enhancement'];
+const VALID_PRIORITIES = ['P1', 'P2', 'P3', 'P4', 'P5'];
+const VALID_RESOLUTIONS = ['FIXED', 'INVALID', 'WONTFIX', 'DUPLICATE', 'WORKSFORME', 'INCOMPLETE', 'NOT_A_BUG'];
+
+function pickAllowedBugUpdates(body: unknown): Record<string, unknown> {
+  const source = (body ?? {}) as Record<string, unknown>;
+  const picked: Record<string, unknown> = {};
+  for (const field of MUTABLE_BUG_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(source, field)) picked[field] = source[field];
+  }
+  return picked;
+}
+
+/** The same value checks the create path enforces, applied to updates too. */
+function validateBugUpdates(updates: Record<string, unknown>): string[] {
+  const errors: string[] = [];
+  const check = (field: string, allowed: string[], nullable = false) => {
+    const v = updates[field];
+    if (v === undefined) return;
+    if (nullable && v === null) return;
+    if (typeof v !== 'string' || !allowed.includes(v)) {
+      errors.push(`Invalid ${field} '${String(v)}'. Expected one of [${allowed.join(', ')}]${nullable ? ' or null' : ''}.`);
+    }
+  };
+
+  check('status', VALID_STATUSES);
+  check('severity', VALID_SEVERITIES);
+  check('priority', VALID_PRIORITIES);
+  check('resolution', VALID_RESOLUTIONS, true);
+
+  if (updates.title !== undefined) {
+    const t = updates.title;
+    if (typeof t !== 'string' || t.trim().length < 3) errors.push('Title must be at least 3 characters.');
+    else if (t.length > 255) errors.push('Title cannot exceed 255 characters.');
+  }
+  for (const numeric of ['estimatedHours', 'remainingHours']) {
+    const v = updates[numeric];
+    if (v !== undefined && v !== null && (typeof v !== 'number' || !Number.isFinite(v) || v < 0)) {
+      errors.push(`${numeric} must be a non-negative number.`);
+    }
+  }
+  return errors;
+}
 
 export class BugController {
   public static getBugs(req: Request, res: Response) {
@@ -172,7 +232,7 @@ export class BugController {
   public static createBug(req: Request, res: Response) {
     try {
       const bugData = req.body;
-      const user = req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
 
       if (!bugData.title || !bugData.productId || !bugData.componentId) {
         return res.status(400).json({ error: 'Title, Product, and Component are required fields.' });
@@ -266,13 +326,32 @@ export class BugController {
         return res.status(404).json({ error: 'Bug not found' });
       }
 
-      const updates = req.body;
-      const user = req.currentUser || req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
+
+      // Only fields a client is allowed to change are read from the body.
+      //
+      // Previously the whole body was spread onto the record, so a single PATCH
+      // could rewrite `id` and `bugNumber` — which detached the bug from every
+      // reference to it, returned 404 for its own URL and left dangling edges
+      // in the dependency graph — or introduce arbitrary new properties.
+      const updates = pickAllowedBugUpdates(req.body);
+
+      if (Object.keys(updates).length === 0 && req.body?.lockVersion === undefined) {
+        return res.status(400).json({
+          error: `No updatable fields supplied. Allowed: ${MUTABLE_BUG_FIELDS.join(', ')}.`,
+          code: 'NO_VALID_FIELDS',
+        });
+      }
+
+      const fieldErrors = validateBugUpdates(updates);
+      if (fieldErrors.length > 0) {
+        return res.status(400).json({ error: fieldErrors.join(' '), code: 'INVALID_FIELD_VALUE' });
+      }
 
       // Optimistic concurrency control check
-      if (updates.lockVersion !== undefined && currentBug.lockVersion !== undefined && Number(updates.lockVersion) !== currentBug.lockVersion) {
+      if (req.body?.lockVersion !== undefined && currentBug.lockVersion !== undefined && Number(req.body.lockVersion) !== currentBug.lockVersion) {
         return res.status(409).json({
-          error: `Conflict: Issue #${currentBug.bugNumber} was modified concurrently (Client version: ${updates.lockVersion}, Server version: ${currentBug.lockVersion}). Refresh and retry.`,
+          error: `Conflict: Issue #${currentBug.bugNumber} was modified concurrently (client version ${req.body.lockVersion}, server version ${currentBug.lockVersion}). Refresh and retry.`,
           code: 'OPTIMISTIC_LOCK_CONFLICT',
           currentVersion: currentBug.lockVersion,
         });
@@ -280,7 +359,7 @@ export class BugController {
 
       // Security sensitivity capability check
       if (updates.isSecuritySensitive !== undefined && updates.isSecuritySensitive !== currentBug.isSecuritySensitive) {
-        const canOverrideSec = user.role === 'admin' || user.role === 'maintainer' || user.name.includes('Security');
+        const canOverrideSec = hasCapability(user, 'security_override');
         if (!canOverrideSec) {
           return res.status(403).json({
             error: `Forbidden: Only Security Leads or Admins can toggle security confidentiality. Current role: '${user.role}' (${user.name}).`,
@@ -291,7 +370,7 @@ export class BugController {
 
       // QA verification capability check
       if (updates.status === 'VERIFIED' && currentBug.status !== 'VERIFIED') {
-        const canVerify = user.role === 'qa' || user.role === 'admin' || user.role === 'maintainer';
+        const canVerify = hasCapability(user, 'verify_bug');
         if (!canVerify) {
           return res.status(403).json({
             error: `Forbidden: Only QA Leads or Admins can mark an issue as VERIFIED. Current role: '${user.role}' (${user.name}).`,
@@ -302,9 +381,9 @@ export class BugController {
 
       // Lifecycle validation if status or resolution is changing
       if (updates.status || updates.resolution !== undefined) {
-        const targetStatus = updates.status || currentBug.status;
-        const targetResolution = updates.resolution !== undefined ? updates.resolution : currentBug.resolution;
-        const targetDuplicateOf = updates.duplicateOfBugId !== undefined ? updates.duplicateOfBugId : currentBug.duplicateOfBugId;
+        const targetStatus = (updates.status as BugStatus | undefined) ?? currentBug.status;
+        const targetResolution = (updates.resolution as BugResolution | undefined) ?? currentBug.resolution;
+        const targetDuplicateOf = (updates.duplicateOfBugId as string | undefined) ?? currentBug.duplicateOfBugId;
 
         const validation = StateMachineService.validateTransition(
           currentBug,
@@ -381,7 +460,7 @@ export class BugController {
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 
       const { text, isInternal } = req.body;
-      const user = req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
 
       if (!text || text.trim().length === 0) {
         return res.status(400).json({ error: 'Comment text cannot be empty' });
@@ -427,7 +506,7 @@ export class BugController {
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 
       const { hoursSpent, comment, newRemainingHours } = req.body;
-      const user = req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
 
       const hrs = Number(hoursSpent);
       if (isNaN(hrs) || hrs <= 0) {
@@ -473,7 +552,7 @@ export class BugController {
       const bug = store.getBugById(bugId);
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 
-      const user = req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
       const hasVoted = bug.votedUserIds.includes(user.id);
 
       if (hasVoted) {
@@ -498,7 +577,7 @@ export class BugController {
   public static bulkUpdate(req: Request, res: Response) {
     try {
       const { bugIds, updates } = req.body;
-      const user = req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
 
       if (!Array.isArray(bugIds) || bugIds.length === 0) {
         return res.status(400).json({ error: 'bugIds must be a non-empty array' });
@@ -605,7 +684,7 @@ export class BugController {
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 
       const { status, resolution, duplicateOfBugId } = req.body;
-      const user = req.currentUser || req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
 
       if (!status) {
         return res.status(400).json({ error: 'Target status is required for transition.' });
@@ -677,7 +756,7 @@ export class BugController {
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 
       const { assigneeId } = req.body;
-      const user = req.currentUser || req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
 
       const assigneeUser = store.getUserById(assigneeId);
       if (!assigneeUser) {
@@ -717,7 +796,7 @@ export class BugController {
       if (!bug) return res.status(404).json({ error: 'Bug not found' });
 
       const { isSecuritySensitive } = req.body;
-      const user = req.currentUser || req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
 
       const previousValue = bug.isSecuritySensitive;
       const updated = store.updateBug(bug.id, {

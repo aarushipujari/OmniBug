@@ -3,12 +3,11 @@
 **Modern Bug & Defect Lifecycle Management Platform Reconstructed from Bugzilla.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-44%20passing-16a34a.svg)]()
+[![Tests](https://img.shields.io/badge/tests-84%20passing-16a34a.svg)]()
 [![Typecheck](https://img.shields.io/badge/tsc-0%20errors-16a34a.svg)]()
-[![CI](https://img.shields.io/badge/CI-passing-16a34a.svg)]()
 [![Architecture](https://img.shields.io/badge/Stack-React%2018%20%2B%20Express%20REST-0284c7.svg)]()
 
-File a crash traceback, inspect unified patch diffs side-by-side, request peer review flags, and visualize blocker critical paths across multi-tiered software architectures. OmniBug preserves Bugzilla's core strengths—hierarchical domain models (*Products ➔ Components ➔ Milestones*), guarded state machines, and fine-grained reviewer flags—while modernizing the developer experience with instant sub-millisecond reactivity, deterministic AST smart triage, and terminal-grade command ergonomics.
+File a crash traceback, inspect unified patch diffs side-by-side, request peer review flags, and visualize blocker critical paths across multi-tiered software architectures. OmniBug preserves Bugzilla's core strengths—hierarchical domain models (*Products ➔ Components ➔ Milestones*), guarded state machines, and fine-grained reviewer flags—while modernizing the developer experience: the client keeps its state in memory so filtering and navigation do not round-trip, triage is deterministic and runs offline, and the keyboard reaches everything.
 
 Built for **Track 2: Developer Tool Reconstruction — Bugzilla**.
 
@@ -33,7 +32,7 @@ Built for **Track 2: Developer Tool Reconstruction — Bugzilla**.
 
 Running locally across decoupled frontend and backend services:
 
-1. **Filter blockers with tokenized search.** Type `severity:blocker` or `priority:P1` in the top search bar (or press <kbd>Ctrl+K</kbd> / <kbd>⌘K</kbd>) to instantly isolate release-critical defects without page reloads.
+1. **Filter blockers with tokenized search.** Type `severity:blocker` or `priority:P1` in the top search bar (or press <kbd>Ctrl+K</kbd> / <kbd>⌘K</kbd>) to isolate release-critical defects without a page reload.
 2. **Switch active developer personas.** Click the top-right avatar menu to toggle between **Alex Rivera** *(Lead Architect)*, **Elena Rostova** *(Security Lead)*, and **Sarah Jenkins** *(QA Lead)*. Notice how assigned queues and `needinfo?` review tallies dynamically re-scope.
 3. **Execute discussion slash commands.** Open **Bug #1001**, scroll to comments, and type `/priority P1` or `/log 2.5h Verified memory bounds`. Submit to see the issue state mutate with a live audit trail.
 4. **Inspect side-by-side patch diffs.** Inside **Bug #1001**, switch to the *Patch Diffs* tab and toggle *Split View* to review 2-column git deletions and additions.
@@ -79,7 +78,7 @@ Legacy Bugzilla lists blocker IDs as static comma-separated text numbers. OmniBu
 - Automatically calculates and renders the **Critical Path** (highlighted in red) to show engineering leads the exact chain of unresolved blockers preventing a release milestone.
 - Employs real-time cycle detection to prevent circular blocker deadlocks.
 
-### 2. Multi-Language AST/Regex Crash Traceback Parser
+### 2. Multi-Language Crash Traceback Parser
 Engineers frequently copy-paste raw terminal logs into bug reports. OmniBug includes an intelligent traceback parser supporting:
 - **Python** tracebacks (`File "...", line ..., in ...`)
 - **JavaScript / TypeScript / V8** error traces (`at function (file:line:col)`)
@@ -89,8 +88,18 @@ Engineers frequently copy-paste raw terminal logs into bug reports. OmniBug incl
 
 The parser extracts the deepest application culprit frame, extracts line numbers, matches file paths to system components, and synthesizes automated Jest/Mocha reproduction test templates.
 
+The synthesized reproduction test is executable, not a template. It asserts
+against the triage output itself — the culprit file and line the parser
+extracted, the classified error type, the presence of application frames, and
+the routed component and severity — so running it genuinely passes or fails.
+Execution happens on the server in a fresh `node:vm` context that contains only
+`describe`, `it`, `expect` and a frozen copy of the fixture: no `require`, no
+`process`, no filesystem, no network, and a 1000ms interrupt for a snippet that
+does not terminate. The client sends the bug text rather than the test source,
+so the sandbox only ever runs code this server generated.
+
 ### 3. Live NLP Token Similarity Duplicate Prevention
-Duplicate bugs waste hundreds of developer triage hours. As a reporter types a title and description, OmniBug tokenizes the input, strips punctuation, and runs Jaccard n-gram cosine similarity matching against all open and closed tickets in the database. A live warning drawer alerts the reporter with match percentage scores and one-click side-by-side comparison before redundant tickets are submitted.
+Duplicate bugs waste hundreds of developer triage hours. As a reporter types a title and description, OmniBug lowercases the input, strips punctuation, drops tokens of two characters or fewer, and scores the resulting token set against every open and closed ticket with Jaccard similarity (overlap divided by union). Title and full-text scores are weighted equally and anything at or above 0.18 is surfaced. A live warning drawer alerts the reporter with match percentage scores and one-click side-by-side comparison before redundant tickets are submitted.
 
 ### 4. Discussion Slash Command Automation Engine
 Developers can triage and update issues directly from comment boxes without clicking through forms:
@@ -110,7 +119,7 @@ Developers can triage and update issues directly from comment boxes without clic
 
 | Dimension | Legacy Bugzilla (Perl CGI) | OmniBug (Modern Reconstruction) |
 | :--- | :--- | :--- |
-| **Architecture** | Heavy Perl CGI scripts, full page reload on every comment, lock contention | Decoupled React 18 SPA + Express.js REST API with sub-millisecond client state |
+| **Architecture** | Heavy Perl CGI scripts, full page reload on every comment, lock contention | Decoupled React 18 SPA + Express REST API; client state is held in memory, so filtering and view changes do not reload the page |
 | **Triage & Ergonomics** | Multi-screen form clicking, slow manual categorization | **Speed Triage Workspace** with keyboard hotkeys (<kbd>J</kbd>/<kbd>K</kbd>/<kbd>C</kbd>/<kbd>I</kbd>/<kbd>E</kbd>/<kbd>1-5</kbd>) |
 | **Duplicate Prevention** | Reactive duplicate search *after* filing | **Live Proactive NLP Similarity** alerting reporters *as they type* |
 | **Crash / Stack Traces** | Unformatted plain text blobs | **Multi-Language Parser** auto-extracting culprit file/line and component routing |
@@ -197,10 +206,6 @@ Given a directed graph $G = (V, E)$ where vertices $V$ represent bugs and direct
 - Node.js >= 18.0.0
 - npm >= 9.0.0
 
-### Installation & Run
-
-## Quickstart & Local Setup
-
 ### Option A: Local Multi-Process Dev Launcher
 ```bash
 # 1. Clone the repository
@@ -229,7 +234,7 @@ Open **`http://localhost:4000`** in your browser. (The Express backend serves th
 
 | Time | Action | What to Observe |
 |---|---|---|
-| **0:00 - 0:45** | **Deterministic Crash Traceback Triage** | Click `+ New Bug` (<kbd>C</kbd>), enter `IndexError in AST optimizer`, paste a Python traceback, and click `✨ Auto-Analyze`. Observe the extracted culprit file/line (`optimizer.py:184`), deterministic confidence score (`88% Confidence`), and duplicate similarity alerts. Click `▶ Run Test in Sandbox` to execute the synthesized test live. |
+| **0:00 - 0:45** | **Deterministic Crash Traceback Triage** | Click `+ New Bug` (<kbd>C</kbd>), enter `IndexError in AST optimizer`, paste a Python traceback, and click `✨ Auto-Analyze`. Observe the extracted culprit file/line (`optimizer.py:184`), the inferred severity and component routing, and duplicate similarity alerts. Click `▶ Run Test in Sandbox`: the server synthesizes a test from the parsed traceback, executes it in an isolated `node:vm` context with a 1s interrupt, and returns the real per-assertion results and timings. |
 | **0:45 - 1:30** | **Collaborative Workflow & Slash Commands** | Open **Bug #1001**. Observe the persistent top pipeline header (`1. Reported ➔ ... ➔ 4. Review`). Switch to *Patch Diffs* tab to inspect side-by-side 2-column unified git diffs. In comments, type `/priority P1` and `/log 2.5h Fixed buffer bounds` to witness instant atomic mutation with micro-audit logging. |
 | **1:30 - 2:15** | **Blocker Topology & Critical Path DAG** | Navigate to **Dependency Graph (DAG)**. Observe Kahn's Topological Sorting algorithm spatial levels and the red-highlighted **Critical Path** showing which blocker chain delays release delivery. |
 | **2:15 - 3:00** | **Decision-Support Telemetry & Drill-Downs** | Open **Analytics & SLA**. Observe the 4 operational decision-support cards (*Release Threats*, *Triage Velocity*, *Defect Aging*, *Security Quarantine*). Click `[Inspect 2 Blockers ➔]` to instantly drill down into the filtered issue table without manual searching. |
@@ -238,10 +243,10 @@ Open **`http://localhost:4000`** in your browser. (The Express backend serves th
 
 ## Why Deterministic Smart Triage Beats Black-Box LLMs
 
-Rather than delegating defect triage to opaque third-party cloud LLM APIs, OmniBug implements a dedicated **Deterministic AST & Heuristic Triage Engine**:
-- **100% Offline & Private**: Zero source code or crash stack traces leave your perimeter; works entirely air-gapped without cloud API dependencies.
+Rather than delegating defect triage to opaque third-party cloud LLM APIs, OmniBug implements a dedicated **deterministic heuristic triage engine**:
+- **Offline by construction**: triage makes no network call of any kind, so crash tracebacks and source paths never leave the deployment. There is no model and no API key.
 - **Zero API Key / Cost Overhead**: Eliminates recurring token costs, rate limits, and latency spikes.
-- **Sub-Millisecond Execution**: Instant AST frame extraction and Jaccard NLP similarity matching in $< 5\text{ms}$.
+- **No model, no network**: frame extraction and Jaccard scoring are plain string operations over the in-process dataset, so triage resolves inside the same request with no external call.
 - **Auditable & Deterministic**: Reproducible scoring rules with exact explanation cards rather than unpredictable hallucinated classifications.
 
 ---
@@ -251,8 +256,8 @@ Rather than delegating defect triage to opaque third-party cloud LLM APIs, OmniB
 | Architectural Dimension | Implementation Detail | Automated Verification Evidence |
 |---|---|---|
 | **Core Defect Lifecycle & Hierarchy** | Full Bugzilla domain model (*Products ➔ Components ➔ Milestones*), guarded state machine (`UNCONFIRMED` ➔ `CLOSED`), reviewer flags (`?`, `+`, `-`, `X`), time tracking, and full Bugzilla XML round-tripping. | 6 State machine tests + 4 XML round-trip tests (`npm test`) |
-| **Traceback AST Parser & Blocker DAG** | Multi-language crash parser (Python, V8, Go, Rust, ASAN), live NLP duplicate detection, Kahn's algorithm critical path DAG engine, and sandboxed test execution. | 5 AST/Traceback tests + 4 DAG critical-path tests |
-| **Security, RBAC & Mutation Isolation** | Cryptographically signed HMAC-SHA256 session tokens (`/api/auth/token`), capability gates (`security_override`, `verify_bug`), explicit domain commands (`/transition`, `/assign`, `/set-security`), and optimistic concurrency locks (`lockVersion`). | 8 RBAC, HMAC token & concurrency tests |
+| **Traceback parser & blocker DAG** | Multi-language crash parser (Python, V8, Go, Rust, ASAN), live duplicate detection, Kahn's-algorithm critical-path DAG engine, and reproduction-test synthesis. | Traceback and DAG critical-path assertions |
+| **Security, RBAC & Mutation Isolation** | scrypt password verification, expiring HMAC-SHA256 session tokens (`POST /api/auth/login`), field allowlisting on updates, capability gates (`security_override`, `verify_bug`), explicit domain commands (`/transition`, `/assign`, `/set-security`), and optimistic concurrency locks (`lockVersion`). | HTTP-level authentication, authorisation, validation and concurrency assertions |
 | **Ergonomics & Studio UI** | Linear/shadcn-inspired interface with dark mode, persistent visual lifecycle stepper, unified chronological activity timeline, and comprehensive keyboard accessibility (<kbd>Ctrl+K</kbd>, <kbd>C</kbd>, <kbd>J</kbd>/<kbd>K</kbd>, <kbd>Esc</kbd>). | Verified across React 18 component hierarchy |
 | **Single-Command Reliability** | 44/44 passing automated backend tests, single-command launcher (`npm run dev`), Docker deployment (`docker compose up`), and verification (`npm run check`). | `npm run check` compiles cleanly with 0 errors |
 
@@ -260,45 +265,45 @@ Rather than delegating defect triage to opaque third-party cloud LLM APIs, OmniB
 
 ## Security Architecture, Session Tokens & Concurrency
 
-- **Cryptographic HMAC Session Tokens**: Client requests can authenticate via `Authorization: Bearer <signed-token>` generated with SHA-256 HMAC signatures (`POST /api/auth/token`), or use the `X-Demo-Persona-Id` header for transparent local judging simulation.
-- **Guarded Domain Mutations**: Status transitions to `VERIFIED` and `CLOSED` strictly require QA Lead or Admin capability tokens. Generic `PATCH /bugs/:id` is guarded and enforces optimistic concurrency locks.
-- **Optimistic Concurrency Control**: Every bug mutation increments a numeric `lockVersion` counter. Concurrent overwrites are rejected with `409 Conflict` errors to prevent race conditions.
-- **Security Quarantine**: Issues flagged as `isSecuritySensitive` require explicit `security_override` capability to modify.
+- **Passwords**: stored as scrypt derivations with a per-user 16-byte salt and compared with `crypto.timingSafeEqual`. A hash is never serialised to a client.
+- **Session tokens**: `POST /api/auth/login` verifies a password and returns `base64url(userId:issuedAt:expiresAt:hmac)`, signed with HMAC-SHA256. Every request re-verifies the signature and **enforces the expiry**. `SESSION_SECRET` is required in production — the server refuses to start without it rather than falling back to a constant an attacker could read in the source.
+- **One source of identity**: identity is taken from the `Authorization: Bearer` token and nowhere else. Headers and request bodies naming a user are ignored, so the audit trail records who actually acted.
+- **Field allowlisting**: `PATCH /bugs/:id` applies only fields on an explicit allowlist and validates each one. Identity fields (`id`, `bugNumber`) and unknown properties are rejected, so a client cannot rewrite a primary key or graft arbitrary state onto a record.
+- **Capability checks**: authorisation derives from the role field alone. Transitions to `VERIFIED`/`CLOSED`, store resets, XML import, and the security flag each require a named capability.
+- **Optimistic concurrency**: every mutation increments `lockVersion`; a write against a stale version is rejected with `409 Conflict` rather than silently overwriting.
+- **Sandboxed execution**: synthesized reproduction tests run in a fresh `node:vm` context with no `require`, `process`, filesystem or network access and a 1000ms interrupt. The endpoint requires authentication and runs only source the server generated — it never executes a snippet supplied by a caller.
 
 ---
 
 ## Explicit Design Trade-offs & Production Migration Roadmap
 
 To maintain absolute credibility and transparent engineering standards, OmniBug explicitly documents the following design trade-offs:
-1. **Persistence Layer**: Implements a local-first in-memory transactional store with atomic JSON snapshots and optimistic locking for instant local evaluation. The repository is structured around an abstract `Store` interface with a direct migration path to PostgreSQL (`pg`/Prisma) for distributed deployments:
+1. **Persistence Layer**: Implements a local-first in-memory transactional store with atomic JSON snapshots and optimistic locking for instant local evaluation. `Store` is a concrete class, not an abstraction over a driver, so moving to PostgreSQL means rewriting it rather than swapping an implementation. The entity mapping that migration would follow:
    | Entity | Local Store Model | Production PostgreSQL Table |
    |---|---|---|
    | Product / Component | `products[].components[]` | `products` 1-to-N `components` |
    | Bug / Defect | `bugs[]` with `lockVersion` | `bugs` table with `INTEGER lock_version` |
    | Audit Trail | `auditLogs[]` (immutable) | `audit_logs` append-only partitioned table |
-2. **Authentication**: Uses HMAC-SHA256 signed session tokens with demo persona simulation for friction-free evaluation. Production deployment would hook into standard OIDC/OAuth2 providers (Okta, GitHub, Google).
-3. **Traceback AST Parsing**: Uses deterministic regex AST tokenizers optimized for instant sub-millisecond client reactivity without requiring external cloud API round-trips.
+2. **Authentication**: Passwords are hashed with scrypt and verified in constant time; a successful login returns an HMAC-SHA256 signed token carrying an expiry that is enforced on every request. The seeded accounts share a published password so the role boundaries can be exercised during evaluation — the credential is still checked server-side, so those boundaries are real rather than simulated. There is no registration, password reset, or refresh-token rotation; production would delegate to an OIDC provider.
+3. **Traceback parsing**: per-language regular expressions extract the culprit frame. There is no syntax tree involved — calling it an AST parser would overstate what it does — but it is deterministic, runs in-process, and needs no cloud round-trip.
 
 ---
 
 ## Verification & Automated Test Suite
 
-Run the full repository verification command to build both packages and execute all 44 automated tests:
+Run the full repository verification command to build both packages and execute all 84 automated tests:
 
 ```bash
 npm run check
 ```
 
 ```
-========================================
 🧪 RUNNING OMNIBUG BACKEND TEST SUITE
 ========================================
-
 📦 1. Store & Seed Data Tests
   ✅ PASS: Seed bugs loaded successfully
   ✅ PASS: Seed products loaded successfully
   ✅ PASS: Seed users loaded successfully
-
 🔄 2. Bugzilla Lifecycle & State Machine Tests
   ✅ PASS: NEW -> IN_PROGRESS is allowed
   ✅ PASS: NEW -> VERIFIED is correctly rejected
@@ -306,33 +311,28 @@ npm run check
   ✅ PASS: RESOLVED with FIXED resolution is allowed
   ✅ PASS: DUPLICATE resolution requires duplicateOfBugId
   ✅ PASS: DUPLICATE resolution with target bug ID is valid
-
 🕸️ 3. Dependency Graph & Blocker Engine Tests
   ✅ PASS: Graph generates all nodes
   ✅ PASS: Graph generates blocker edges
   ✅ PASS: Initial seed graph has no circular blocker dependencies
   ✅ PASS: Critical path correctly calculated
-
 🤖 4. AI Triage & Smart Duplicate Detector Tests
   ✅ PASS: AI Duplicate detector identifies relevant bug candidates
   ✅ PASS: Top duplicate candidate is correctly bug-1001/1007
   ✅ PASS: AI detects heap overflow and marks severity as blocker
   ✅ PASS: AI detects security relevance
   ✅ PASS: AI generates automated test case template
-
 ⚡ 5. Multi-Language Stack Trace Parser & Slash Command Tests
   ✅ PASS: Parser detects Python language traceback
   ✅ PASS: Parser extracts culprit file path
   ✅ PASS: Parser extracts culprit line number
   ✅ PASS: Correctly routes optimizer/compiler bug to JIT/Compiler component
   ✅ PASS: Slash command engine executes multiple commands in single comment
-
 📄 6. Bugzilla XML Interoperability Tests
   ✅ PASS: Exports valid Bugzilla XML root container
   ✅ PASS: Exports bug ID and metadata in XML
   ✅ PASS: Imports matching count of bugs from XML
   ✅ PASS: Imported bug title matches original
-
 🎯 7. Speed Triage & Classification Tests (#1006)
   ✅ PASS: Bug #1006 starts in UNCONFIRMED status
   ✅ PASS: AI generates suggested component ID for bug #1006
@@ -342,7 +342,6 @@ npm run check
   ✅ PASS: Valid transition from UNCONFIRMED to NEW
   ✅ PASS: Bug #1006 confirmed to NEW status
   ✅ PASS: Confirmed status persists in store
-
 🛡️ 8. RBAC, Domain Commands & Security Tests
   ✅ PASS: Developer persona identified
   ✅ PASS: QA persona identified
@@ -350,12 +349,58 @@ npm run check
   ✅ PASS: Explicit domain assignment succeeded
   ✅ PASS: Domain assignment produced immutable audit trail
   ✅ PASS: Cryptographic HMAC session token generated
-  ✅ PASS: HMAC session token successfully verified and extracted identity
+  ✅ PASS: HMAC session token verified and identity extracted
   ✅ PASS: Tampered HMAC session token strictly rejected
-  ✅ PASS: Optimistic concurrency version auto-increments on mutation
-
+  ✅ PASS: Expired session token rejected despite a valid signature
+  ✅ PASS: Correct password verifies against the stored digest
+  ✅ PASS: Incorrect password is rejected
+  ✅ PASS: Optimistic concurrency lockVersion auto-increments on mutation
+🌐 9. HTTP API — Authentication
+  ✅ PASS: Anonymous mutation is rejected
+  ✅ PASS: X-User-Id header grants no identity
+  ✅ PASS: _currentUser in the body grants no identity
+[API] POST /api/auth/token 404 (2ms)
+  ✅ PASS: Credential-free token endpoint no longer exists
+  ✅ PASS: Wrong password is rejected
+  ✅ PASS: Unknown account is rejected
+  ✅ PASS: Correct password returns a session token
+  ✅ PASS: Valid token authenticates
+  ✅ PASS: Password hash is never serialised to a client
+  ✅ PASS: Forged token is rejected
+🔒 10. HTTP API — Authorisation
+  ✅ PASS: Developer cannot reset the store
+  ✅ PASS: Maintainer can reset the store
+  ✅ PASS: Security override requires the capability, not a matching name
+🛡️ 11. HTTP API — Request validation
+  ✅ PASS: Update with no permitted fields is rejected
+  ✅ PASS: Identity fields cannot be rewritten by a client
+  ✅ PASS: Primary key and bug number are unchanged
+  ✅ PASS: Arbitrary properties are not grafted onto a record
+  ✅ PASS: Invalid severity is rejected on update, not just on create
+  ✅ PASS: Too-short title is rejected on update
+  ✅ PASS: A permitted field updates normally
+🔁 12. HTTP API — Concurrency & graph integrity
+  ✅ PASS: A write against a stale version is refused
+  ✅ PASS: A write against the current version succeeds
+  ✅ PASS: Dependency graph contains no dangling edges
+📋 13. HTTP API — Audit attribution
+  ✅ PASS: Issue is readable
+  ✅ PASS: Comment is attributed to the authenticated user, not a client-supplied one
+🧪 14. Reproduction test sandbox
+  ✅ PASS: A passing test reports one passing assertion
+  ✅ PASS: Timings are measured, not hardcoded
+  ✅ PASS: A failing assertion is reported as a failure
+  ✅ PASS: The failure message names the received value
+  ✅ PASS: A snippet that will not parse fails cleanly rather than throwing
+  ✅ PASS: The VM context exposes no process object to the snippet
+  ✅ PASS: A non-terminating snippet is interrupted by the timeout
+  ✅ PASS: Running a test requires authentication
+  ✅ PASS: Authenticated caller can run the synthesized test
+  ✅ PASS: The synthesized test passes against the traceback it was generated from
+  ✅ PASS: The generated suite contains several real assertions
+  ✅ PASS: Output is generated from the run, not a fixed string
 ========================================
-📊 TEST RESULTS: 44 PASSED, 0 FAILED
+📊 TEST RESULTS: 84 PASSED, 0 FAILED
 ========================================
 ```
 

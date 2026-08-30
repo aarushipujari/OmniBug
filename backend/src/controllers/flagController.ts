@@ -15,7 +15,7 @@ export class FlagController {
         requesteeId?: string;
       };
 
-      const user = req.body._currentUser || store.getUsers()[0];
+      const user = req.currentUser!;
 
       if (!name || !status) {
         return res.status(400).json({ error: 'name and status are required for flag updates' });

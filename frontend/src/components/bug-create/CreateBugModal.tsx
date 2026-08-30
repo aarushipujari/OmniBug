@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useApp } from '../../context/AppContext.js';
+import { useApp, useCurrentUser } from '../../context/AppContext.js';
 import { BugSeverity, BugPriority, DuplicateCandidate, TriagePrediction, ParsedStackTrace } from '../../types/index.js';
 import { api } from '../../services/api.js';
 import {
@@ -27,19 +27,30 @@ export const CreateBugModal: React.FC = () => {
     setIsCreateModalOpen,
     products,
     activeProductId,
-    currentUser,
     users,
     refreshData,
     toast,
     setSelectedBugId,
   } = useApp();
+  const currentUser = useCurrentUser();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [productId, setProductId] = useState<string>(activeProductId || products[0]?.id || 'prod-1');
-  const [componentId, setComponentId] = useState<string>('');
-  const [version, setVersion] = useState<string>('');
-  const [targetMilestone, setTargetMilestone] = useState<string>('');
+  /*
+   * These four fields are derived, not stored.
+   *
+   * They were plain state reconciled by two effects that ran after the first
+   * paint: the modal rendered with an empty component, version and milestone,
+   * then set all three, then re-rendered — a visible flash of the wrong values
+   * and an extra render pass on every open. A null override means "whatever the
+   * selected product's first option is"; picking a value in the dropdown fills
+   * the override in, and an override that no longer exists in the new product
+   * falls back on its own without an effect.
+   */
+  const [productIdOverride, setProductIdOverride] = useState<string | null>(null);
+  const [componentIdOverride, setComponentIdOverride] = useState<string | null>(null);
+  const [versionOverride, setVersionOverride] = useState<string | null>(null);
+  const [targetMilestoneOverride, setTargetMilestoneOverride] = useState<string | null>(null);
   const [severity, setSeverity] = useState<BugSeverity>('normal');
   const [priority, setPriority] = useState<BugPriority>('P3');
   const [isSecuritySensitive, setIsSecuritySensitive] = useState(false);
@@ -56,30 +67,28 @@ export const CreateBugModal: React.FC = () => {
   const [isTestingSandbox, setIsTestingSandbox] = useState(false);
   const [sandboxResult, setSandboxResult] = useState<string | null>(null);
 
-  // Sync selected product components
+  // Resolved during render, so the first paint already shows the right values.
+  const productId =
+    productIdOverride && products.some(p => p.id === productIdOverride)
+      ? productIdOverride
+      : (activeProductId && products.some(p => p.id === activeProductId) ? activeProductId : products[0]?.id) || '';
+
   const selectedProduct = products.find(p => p.id === productId) || products[0];
 
-  useEffect(() => {
-    if (products.length > 0) {
-      if (!productId || !products.some(p => p.id === productId)) {
-        setProductId(activeProductId || products[0].id);
-      }
-    }
-  }, [products, activeProductId, productId]);
+  const componentId =
+    componentIdOverride && selectedProduct?.components.some(c => c.id === componentIdOverride)
+      ? componentIdOverride
+      : selectedProduct?.components[0]?.id || '';
 
-  useEffect(() => {
-    if (selectedProduct) {
-      if (selectedProduct.components.length > 0 && (!componentId || !selectedProduct.components.some(c => c.id === componentId))) {
-        setComponentId(selectedProduct.components[0].id);
-      }
-      if (selectedProduct.versions.length > 0 && (!version || !selectedProduct.versions.includes(version))) {
-        setVersion(selectedProduct.versions[0]);
-      }
-      if (selectedProduct.milestones.length > 0 && (!targetMilestone || !selectedProduct.milestones.some(m => m.name === targetMilestone))) {
-        setTargetMilestone(selectedProduct.milestones[0].name);
-      }
-    }
-  }, [selectedProduct, componentId, version, targetMilestone]);
+  const version =
+    versionOverride && selectedProduct?.versions.includes(versionOverride)
+      ? versionOverride
+      : selectedProduct?.versions[0] || '';
+
+  const targetMilestone =
+    targetMilestoneOverride && selectedProduct?.milestones.some(m => m.name === targetMilestoneOverride)
+      ? targetMilestoneOverride
+      : selectedProduct?.milestones[0]?.name || '';
 
   // Live duplicate search on title change
   useEffect(() => {
@@ -126,6 +135,18 @@ export const CreateBugModal: React.FC = () => {
     }
   }, [description, productId]);
 
+  // Hooks must be unconditional — see the note in BugDetailModal. This one sat
+  // after the early return and crashed the modal open path with React #310.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsCreateModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setIsCreateModalOpen]);
+
   if (!isCreateModalOpen) return null;
 
   const handleAutoAnalyze = async () => {
@@ -141,7 +162,7 @@ export const CreateBugModal: React.FC = () => {
       if (prediction.suggestedSeverity) setSeverity(prediction.suggestedSeverity);
       if (prediction.suggestedPriority) setPriority(prediction.suggestedPriority);
       if (prediction.isSecuritySensitive) setIsSecuritySensitive(true);
-      if (prediction.suggestedComponentId) setComponentId(prediction.suggestedComponentId);
+      if (prediction.suggestedComponentId) setComponentIdOverride(prediction.suggestedComponentId);
       if (prediction.suggestedTags?.length > 0) {
         setTags(prev => Array.from(new Set([...prev, ...prediction.suggestedTags])));
       }
@@ -228,8 +249,7 @@ export const CreateBugModal: React.FC = () => {
           estimatedHours: parseFloat(estimatedHours) || 0,
           tags,
           attachments,
-        },
-        currentUser
+        }
       );
 
       toast('Bug Reported Successfully', `Created issue #${newBug.bugNumber}`, 'success');
@@ -243,22 +263,9 @@ export const CreateBugModal: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsCreateModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setIsCreateModalOpen]);
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 select-none font-sans animate-in fade-in duration-150" role="dialog" aria-modal="true" aria-labelledby="create-bug-title">
-      <div
-        className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={e => e.stopPropagation()}
-      >
+      <div className="w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -320,10 +327,10 @@ export const CreateBugModal: React.FC = () => {
 
           {/* Title */}
           <div>
-            <label className="text-xs font-bold text-slate-300 block mb-1.5">
+            <label htmlFor="create-summary-title-1" className="text-xs font-bold text-slate-300 block mb-1.5">
               Summary / Title <span className="text-emerald-400">*</span>
             </label>
-            <input
+            <input id="create-summary-title-1"
               type="text"
               required
               value={title}
@@ -336,7 +343,7 @@ export const CreateBugModal: React.FC = () => {
           {/* Description & AI Auto-Triage Button */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-slate-300">
+              <label htmlFor="create-detailed-description-reproduction-2" className="text-xs font-bold text-slate-300">
                 Detailed Description & Reproduction Steps <span className="text-emerald-400">*</span>
               </label>
               <button
@@ -347,7 +354,7 @@ export const CreateBugModal: React.FC = () => {
                 <Sparkles className="w-3.5 h-3.5" /> Auto-Analyze from Log / Stack Trace
               </button>
             </div>
-            <textarea
+            <textarea id="create-detailed-description-reproduction-2"
               rows={4}
               required
               value={description}
@@ -374,7 +381,7 @@ export const CreateBugModal: React.FC = () => {
                       if (analyzedPrediction.suggestedSeverity) setSeverity(analyzedPrediction.suggestedSeverity);
                       if (analyzedPrediction.suggestedPriority) setPriority(analyzedPrediction.suggestedPriority);
                       if (analyzedPrediction.isSecuritySensitive) setIsSecuritySensitive(true);
-                      if (analyzedPrediction.suggestedComponentId) setComponentId(analyzedPrediction.suggestedComponentId);
+                      if (analyzedPrediction.suggestedComponentId) setComponentIdOverride(analyzedPrediction.suggestedComponentId);
                       if (analyzedPrediction.suggestedTags?.length > 0) {
                         setTags(prev => Array.from(new Set([...prev, ...analyzedPrediction.suggestedTags])));
                       }
@@ -441,14 +448,14 @@ export const CreateBugModal: React.FC = () => {
           {/* Product, Component, Version, Milestone */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
             <div>
-              <label className="text-slate-400 block mb-1">Product</label>
-              <select
+              <label htmlFor="create-product-3" className="text-slate-400 block mb-1">Product</label>
+              <select id="create-product-3"
                 value={productId}
                 onChange={e => {
-                  setProductId(e.target.value);
+                  setProductIdOverride(e.target.value);
                   const prod = products.find(p => p.id === e.target.value);
                   if (prod && prod.components.length > 0) {
-                    setComponentId(prod.components[0].id);
+                    setComponentIdOverride(prod.components[0].id);
                   }
                 }}
                 className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
@@ -462,10 +469,10 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-slate-400 block mb-1">Component</label>
-              <select
+              <label htmlFor="create-component-4" className="text-slate-400 block mb-1">Component</label>
+              <select id="create-component-4"
                 value={componentId}
-                onChange={e => setComponentId(e.target.value)}
+                onChange={e => setComponentIdOverride(e.target.value)}
                 className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
               >
                 {selectedProduct?.components.map(c => (
@@ -477,10 +484,10 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-slate-400 block mb-1">Version</label>
-              <select
+              <label htmlFor="create-version-5" className="text-slate-400 block mb-1">Version</label>
+              <select id="create-version-5"
                 value={version}
-                onChange={e => setVersion(e.target.value)}
+                onChange={e => setVersionOverride(e.target.value)}
                 className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
               >
                 {selectedProduct?.versions.map(v => (
@@ -492,10 +499,10 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-slate-400 block mb-1">Target Milestone</label>
-              <select
+              <label htmlFor="create-target-milestone-6" className="text-slate-400 block mb-1">Target Milestone</label>
+              <select id="create-target-milestone-6"
                 value={targetMilestone}
-                onChange={e => setTargetMilestone(e.target.value)}
+                onChange={e => setTargetMilestoneOverride(e.target.value)}
                 className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
               >
                 {selectedProduct?.milestones.map(m => (
@@ -510,8 +517,8 @@ export const CreateBugModal: React.FC = () => {
           {/* Severity, Priority, Security, Hours */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
             <div>
-              <label className="text-slate-400 block mb-1">Severity</label>
-              <select
+              <label htmlFor="create-severity-7" className="text-slate-400 block mb-1">Severity</label>
+              <select id="create-severity-7"
                 value={severity}
                 onChange={e => setSeverity(e.target.value as any)}
                 className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 capitalize"
@@ -527,8 +534,8 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-slate-400 block mb-1">Priority</label>
-              <select
+              <label htmlFor="create-priority-8" className="text-slate-400 block mb-1">Priority</label>
+              <select id="create-priority-8"
                 value={priority}
                 onChange={e => setPriority(e.target.value as any)}
                 className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200"
@@ -542,8 +549,8 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-slate-400 block mb-1">Estimated Hours</label>
-              <input
+              <label htmlFor="create-estimated-hours-9" className="text-slate-400 block mb-1">Estimated Hours</label>
+              <input id="create-estimated-hours-9"
                 type="number"
                 value={estimatedHours}
                 onChange={e => setEstimatedHours(e.target.value)}
@@ -552,7 +559,7 @@ export const CreateBugModal: React.FC = () => {
             </div>
 
             <div className="flex flex-col justify-end">
-              <label className="flex items-center gap-2 p-2 bg-purple-950/20 border border-purple-900/40 rounded cursor-pointer text-purple-300">
+              <label htmlFor="create-setissecuritysensitive-e-target-10" className="flex items-center gap-2 p-2 bg-purple-950/20 border border-purple-900/40 rounded cursor-pointer text-purple-300">
                 <input
                   type="checkbox"
                   checked={isSecuritySensitive}
@@ -566,10 +573,10 @@ export const CreateBugModal: React.FC = () => {
 
           {/* Initial Patch / Diff (Optional) */}
           <div>
-            <label className="text-xs font-bold text-slate-300 block mb-1">
+            <label htmlFor="create-initial-git-patch-11" className="text-xs font-bold text-slate-300 block mb-1">
               Initial Git Patch / Diff Attachment (Optional)
             </label>
-            <textarea
+            <textarea id="create-setissecuritysensitive-e-target-10"
               rows={3}
               value={patchContent}
               onChange={e => setPatchContent(e.target.value)}
@@ -580,7 +587,7 @@ export const CreateBugModal: React.FC = () => {
 
           {/* Tags */}
           <div>
-            <label className="text-xs font-bold text-slate-300 block mb-1">Keyword Tags</label>
+            <span className="text-xs font-bold text-slate-300 block mb-1">Keyword Tags</span>
             <div className="flex flex-wrap gap-1.5 items-center p-2 bg-slate-950 border border-slate-800 rounded-lg">
               {tags.map(t => (
                 <span
@@ -591,7 +598,7 @@ export const CreateBugModal: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setTags(tags.filter(x => x !== t))}
-                    className="text-slate-500 hover:text-white"
+                    className="text-slate-400 hover:text-white"
                   >
                     ×
                   </button>

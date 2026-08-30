@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useApp } from '../../context/AppContext.js';
+import { useApp, useCurrentUser } from '../../context/AppContext.js';
 import { Bug, BugStatus, BugResolution, BugFlag, FlagStatus } from '../../types/index.js';
 import { api } from '../../services/api.js';
 import { StatusBadge } from '../common/StatusBadge.js';
@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 
 export const BugDetailModal: React.FC = () => {
-  const { selectedBugId, setSelectedBugId, currentUser, users, refreshData, toast } = useApp();
+  const { selectedBugId, setSelectedBugId, users, refreshData, toast } = useApp();
+  const currentUser = useCurrentUser();
 
   const [bug, setBug] = useState<Bug | null>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -38,13 +39,17 @@ export const BugDetailModal: React.FC = () => {
 
   // Flag request inputs
   const [selectedFlagName, setSelectedFlagName] = useState<BugFlag['name']>('review');
-  const [selectedFlagRequestee, setSelectedFlagRequestee] = useState<string>(users[0]?.id || 'usr-1');
-
-  useEffect(() => {
-    if (users.length > 0 && (!selectedFlagRequestee || !users.some(u => u.id === selectedFlagRequestee))) {
-      setSelectedFlagRequestee(users[0].id);
-    }
-  }, [users, selectedFlagRequestee]);
+  /*
+   * Derived from the user list rather than stored and reconciled by an effect.
+   * The old version defaulted to a hardcoded 'usr-1' before the users had
+   * loaded, then corrected itself in a second render pass.
+   */
+  const [flagRequesteeOverride, setFlagRequesteeOverride] = useState<string | null>(null);
+  const selectedFlagRequestee =
+    flagRequesteeOverride && users.some(u => u.id === flagRequesteeOverride)
+      ? flagRequesteeOverride
+      : users[0]?.id || '';
+  const setSelectedFlagRequestee = setFlagRequesteeOverride;
 
   // Dependency add input
   const [depInputId, setDepInputId] = useState('');
@@ -69,6 +74,20 @@ export const BugDetailModal: React.FC = () => {
     loadBug();
   }, [selectedBugId]);
 
+  // Every hook must run on every render. This listener previously sat below the
+  // early return, so opening the modal executed one more hook than closing it
+  // and React aborted with "Rendered more hooks than during the previous
+  // render" (#310) — the modal could never open.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedBugId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setSelectedBugId]);
+
   if (!selectedBugId) return null;
 
   if (isLoading || !bug) {
@@ -84,13 +103,13 @@ export const BugDetailModal: React.FC = () => {
   const handleStatusChange = async (newStatus: BugStatus) => {
     try {
       let resolution: BugResolution = bug.resolution;
-      let dupId = bug.duplicateOfBugId;
+      const dupId = bug.duplicateOfBugId;
 
       if (newStatus === 'RESOLVED' || newStatus === 'CLOSED') {
         if (!resolution) resolution = 'FIXED';
       }
 
-      const updated = await api.transitionBug(bug.id, newStatus, resolution, dupId, currentUser);
+      const updated = await api.transitionBug(bug.id, newStatus, resolution, dupId);
       setBug(updated);
       toast('Status Changed', `Transitioned to ${newStatus}`, 'success');
       await refreshData();
@@ -104,11 +123,12 @@ export const BugDetailModal: React.FC = () => {
     e.preventDefault();
     if (!commentText.trim()) return;
     try {
-      const res = await api.addComment(bug.id, commentText, currentUser, isInternalComment);
-      setBug(res.bug);
+      const res = await api.addComment(bug.id, commentText, isInternalComment);
+      // The comment endpoint returns the comment, not the bug — slash commands
+      // may have mutated the issue, so the authoritative copy is reloaded below.
       setCommentText('');
-      if (res.executedCommands?.length > 0) {
-        const summary = res.executedCommands.map((c: any) => c.description).join(' • ');
+      if (res.executedCommands && res.executedCommands.length > 0) {
+        const summary = res.executedCommands.map(c => c.description).join(' • ');
         toast('Slash Commands Executed', summary, 'success');
         await refreshData();
       } else {
@@ -125,7 +145,7 @@ export const BugDetailModal: React.FC = () => {
     const hrs = parseFloat(workHours);
     if (isNaN(hrs) || hrs <= 0) return;
     try {
-      const res = await api.addWorkLog(bug.id, hrs, workComment, currentUser);
+      const res = await api.addWorkLog(bug.id, hrs, workComment);
       setBug(res.bug);
       setWorkHours('');
       setWorkComment('');
@@ -138,7 +158,7 @@ export const BugDetailModal: React.FC = () => {
 
   const handleVote = async () => {
     try {
-      const res = await api.toggleVote(bug.id, currentUser);
+      const res = await api.toggleVote(bug.id);
       setBug(prev => (prev ? { ...prev, votes: res.votes } : prev));
       toast(res.hasVoted ? 'Upvoted Issue' : 'Removed Upvote', `Total votes: ${res.votes}`, 'info');
       await refreshData();
@@ -149,7 +169,7 @@ export const BugDetailModal: React.FC = () => {
 
   const handleSetFlag = async (name: BugFlag['name'], status: FlagStatus, requesteeId?: string) => {
     try {
-      const res = await api.setFlag(bug.id, name, status, requesteeId, currentUser);
+      const res = await api.setFlag(bug.id, name, status, requesteeId);
       setBug(prev => (prev ? { ...prev, flags: res.flags } : prev));
       toast('Flag Updated', `${name}${status} updated`, 'success');
       await refreshData();
@@ -168,7 +188,7 @@ export const BugDetailModal: React.FC = () => {
         currentList.push(targetId);
       }
       const updates = { [depType]: currentList };
-      const updated = await api.updateBug(bug.id, updates, currentUser);
+      const updated = await api.updateBug(bug.id, updates);
       setBug(updated);
       setDepInputId('');
       toast('Dependency Added', `Updated ${depType}`, 'success');
@@ -179,24 +199,11 @@ export const BugDetailModal: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setSelectedBugId(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setSelectedBugId]);
-
   const patchAttachments = bug.attachments.filter(a => a.isPatch && a.patchContent);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 select-none font-sans animate-in fade-in duration-150" role="dialog" aria-modal="true" aria-labelledby="bug-modal-title">
-      <div
-        className="w-full max-w-6xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
-        onClick={e => e.stopPropagation()}
-      >
+      <div className="w-full max-w-6xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Top Header Bar */}
         <div className="px-6 py-4 bg-slate-850 border-b border-slate-800 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3 min-w-0">
@@ -274,7 +281,7 @@ export const BugDetailModal: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[11px] font-mono text-slate-500 hidden md:inline">
+            <span className="text-[11px] font-mono text-slate-400 hidden md:inline">
               Active Stage: <strong className="text-slate-200">{bug.status}</strong>
             </span>
           </div>
@@ -366,7 +373,7 @@ export const BugDetailModal: React.FC = () => {
                         <Activity className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Unified Activity & Discussion Timeline</span>
                       </h4>
-                      <span className="text-[11px] font-mono text-slate-500">
+                      <span className="text-[11px] font-mono text-slate-400">
                         {bug.comments.length} comments • {bug.workLogs.length} worklogs • {auditLogs.length} events
                       </span>
                     </div>
@@ -431,7 +438,7 @@ export const BugDetailModal: React.FC = () => {
                                       <span className="font-semibold text-emerald-400 font-sans">
                                         {item.actor}
                                       </span>
-                                      <span className="text-slate-500 font-mono text-[11px]">
+                                      <span className="text-slate-400 font-mono text-[11px]">
                                         comment #{item.index} • {new Date(item.timestamp).toLocaleTimeString()}
                                       </span>
                                     </div>
@@ -458,7 +465,7 @@ export const BugDetailModal: React.FC = () => {
                                     <Clock className="w-4 h-4 text-amber-400 shrink-0" />
                                     <span><strong className="text-slate-100">{item.actor}</strong> {item.content}</span>
                                   </div>
-                                  <span className="text-slate-500 text-[10.5px] shrink-0">
+                                  <span className="text-slate-400 text-[10.5px] shrink-0">
                                     {new Date(item.timestamp).toLocaleTimeString()}
                                   </span>
                                 </div>
@@ -489,7 +496,7 @@ export const BugDetailModal: React.FC = () => {
                   <form onSubmit={handleAddComment} className="space-y-3 pt-4 border-t border-slate-800">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-slate-300">Add Comment or Reply</span>
-                      <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                      <label htmlFor="detail-setisinternalcomment-e-target-1" className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={isInternalComment}
@@ -499,7 +506,7 @@ export const BugDetailModal: React.FC = () => {
                         <span>Private / Internal Only</span>
                       </label>
                     </div>
-                    <textarea
+                    <textarea id="detail-setisinternalcomment-e-target-1"
                       rows={3}
                       value={commentText}
                       onChange={e => setCommentText(e.target.value)}
@@ -508,7 +515,7 @@ export const BugDetailModal: React.FC = () => {
                     />
                     {/* Slash Command Helper Chips */}
                     <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-mono">
-                      <span className="text-slate-500 text-[10px] uppercase font-bold mr-1">Slash Actions:</span>
+                      <span className="text-slate-400 text-[10px] uppercase font-bold mr-1">Slash Actions:</span>
                       {[
                         { label: '/resolve FIXED', cmd: '/resolve FIXED' },
                         { label: '/priority P1', cmd: '/priority P1' },
@@ -584,7 +591,7 @@ export const BugDetailModal: React.FC = () => {
                         <div className="space-y-1">
                           {log.changes.map((c: any, i: number) => (
                             <div key={i} className="text-slate-300">
-                              <span className="text-slate-500 uppercase text-[10px] font-bold mr-2">
+                              <span className="text-slate-400 uppercase text-[10px] font-bold mr-2">
                                 [{c.field}]
                               </span>
                               {c.oldValue !== null && c.oldValue !== undefined && (
@@ -610,17 +617,17 @@ export const BugDetailModal: React.FC = () => {
                   {/* Summary */}
                   <div className="grid grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono shadow-inner">
                     <div>
-                      <span className="text-[10px] text-slate-500 block uppercase font-sans">Estimated Hours</span>
+                      <span className="text-[10px] text-slate-400 block uppercase font-sans">Estimated Hours</span>
                       <span className="text-base font-bold text-slate-200">{bug.estimatedHours}h</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block uppercase font-sans">Hours Logged</span>
+                      <span className="text-[10px] text-slate-400 block uppercase font-sans">Hours Logged</span>
                       <span className="text-base font-bold text-emerald-400">
                         {bug.workLogs.reduce((s, w) => s + w.hoursSpent, 0)}h
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block uppercase font-sans">Remaining Estimate</span>
+                      <span className="text-[10px] text-slate-400 block uppercase font-sans">Remaining Estimate</span>
                       <span className="text-base font-bold text-amber-400">{bug.remainingHours}h</span>
                     </div>
                   </div>
@@ -630,8 +637,8 @@ export const BugDetailModal: React.FC = () => {
                     <h5 className="text-xs font-bold text-slate-200 font-sans">Log Developer Work Session</h5>
                     <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <label className="text-[10px] text-slate-400 block font-mono">Hours Spent</label>
-                        <input
+                        <label htmlFor="detail-hours-spent-2" className="text-[10px] text-slate-400 block font-mono">Hours Spent</label>
+                        <input id="detail-hours-spent-2"
                           type="number"
                           step="0.5"
                           value={workHours}
@@ -641,8 +648,8 @@ export const BugDetailModal: React.FC = () => {
                         />
                       </div>
                       <div className="col-span-2">
-                        <label className="text-[10px] text-slate-400 block font-mono">Work Description</label>
-                        <input
+                        <label htmlFor="detail-work-description-3" className="text-[10px] text-slate-400 block font-mono">Work Description</label>
+                        <input id="detail-work-description-3"
                           type="text"
                           value={workComment}
                           onChange={e => setWorkComment(e.target.value)}
@@ -668,7 +675,7 @@ export const BugDetailModal: React.FC = () => {
                       <div key={w.id} className="p-3 bg-slate-950 rounded-xl border border-slate-850 text-xs font-mono flex items-center justify-between shadow-xs">
                         <div>
                           <div className="font-semibold text-slate-200 font-sans">{w.comment}</div>
-                          <div className="text-[10px] text-slate-500">{w.userName} • {new Date(w.loggedAt).toLocaleString()}</div>
+                          <div className="text-[10px] text-slate-400">{w.userName} • {new Date(w.loggedAt).toLocaleString()}</div>
                         </div>
                         <span className="text-emerald-400 font-bold">+{w.hoursSpent}h</span>
                       </div>
@@ -697,7 +704,7 @@ export const BugDetailModal: React.FC = () => {
                             <Paperclip className="w-4 h-4 text-emerald-400 shrink-0" />
                             <div>
                               <div className="font-semibold text-slate-200">{att.fileName}</div>
-                              <div className="text-[10px] text-slate-500">{att.description} ({(att.fileSize / 1024).toFixed(1)} KB)</div>
+                              <div className="text-[10px] text-slate-400">{att.description} ({(att.fileSize / 1024).toFixed(1)} KB)</div>
                             </div>
                           </div>
                           <span className="text-[10px] px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
@@ -742,20 +749,20 @@ export const BugDetailModal: React.FC = () => {
 
             {/* Product & Component Matrix */}
             <div className="space-y-3">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
                 Product & Routing
               </div>
               <div className="space-y-2">
                 <div>
-                  <label className="text-[10px] text-slate-400 block font-mono">Product</label>
+                  <span className="text-[10px] text-slate-400 block font-mono">Product</span>
                   <div className="font-semibold text-slate-200 mt-0.5">{bug.productName}</div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 block font-mono">Component</label>
+                  <span className="text-[10px] text-slate-400 block font-mono">Component</span>
                   <div className="font-semibold text-slate-200 mt-0.5">{bug.componentName}</div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 block font-mono">Target Milestone</label>
+                  <span className="text-[10px] text-slate-400 block font-mono">Target Milestone</span>
                   <div className="text-emerald-400 font-mono font-semibold mt-0.5">
                     {bug.targetMilestone || 'None set'}
                   </div>
@@ -765,12 +772,12 @@ export const BugDetailModal: React.FC = () => {
 
             {/* People: Assignee & QA */}
             <div className="space-y-3 pt-3 border-t border-slate-800">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
                 Ownership & QA
               </div>
               <div className="space-y-2.5">
                 <div>
-                  <label className="text-[10px] text-slate-400 block font-mono">Assignee</label>
+                  <span className="text-[10px] text-slate-400 block font-mono">Assignee</span>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold">
                       {bug.assigneeName[0]}
@@ -779,7 +786,7 @@ export const BugDetailModal: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 block font-mono">QA Contact</label>
+                  <span className="text-[10px] text-slate-400 block font-mono">QA Contact</span>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold">
                       {bug.qaContactName ? bug.qaContactName[0] : 'Q'}
@@ -793,7 +800,7 @@ export const BugDetailModal: React.FC = () => {
             {/* Bugzilla Flag Engine */}
             <div className="space-y-3 pt-3 border-t border-slate-800">
               <div className="flex items-center justify-between">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
                   Flags & Peer Reviews
                 </div>
                 <span className="text-[10px] text-slate-400 font-mono">{bug.flags.length} active</span>
@@ -872,13 +879,13 @@ export const BugDetailModal: React.FC = () => {
 
             {/* Blockers & Dependencies */}
             <div className="space-y-3 pt-3 border-t border-slate-800">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
                 Blockers & Dependency Links
               </div>
 
               {/* Blocks list */}
               <div>
-                <label className="text-[10px] text-slate-400 block font-mono">Blocks:</label>
+                <span className="text-[10px] text-slate-400 block font-mono">Blocks:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {bug.blocks.length === 0 ? (
                     <span className="text-slate-600 font-mono text-[11px]">None</span>
@@ -898,7 +905,7 @@ export const BugDetailModal: React.FC = () => {
 
               {/* Depends On list */}
               <div>
-                <label className="text-[10px] text-slate-400 block font-mono">Depends On (Blocked By):</label>
+                <span className="text-[10px] text-slate-400 block font-mono">Depends On (Blocked By):</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {bug.dependsOn.length === 0 ? (
                     <span className="text-slate-600 font-mono text-[11px]">None</span>
@@ -945,7 +952,7 @@ export const BugDetailModal: React.FC = () => {
             {/* Git Linkage */}
             {bug.gitLinkage && (
               <div className="space-y-2 pt-3 border-t border-slate-800 font-mono text-[11px]">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Git & CI/CD Linkage
                 </div>
                 {bug.gitLinkage.branch && (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../../context/AppContext.js';
+import { useApp, useCurrentUser } from '../../context/AppContext.js';
 import { BugStatus } from '../../types/index.js';
 import { SeverityBadge } from '../common/SeverityBadge.js';
 import { FlagBadge } from '../common/FlagBadge.js';
@@ -27,12 +27,12 @@ export const KanbanView: React.FC = () => {
   const {
     bugs,
     setSelectedBugId,
-    currentUser,
     refreshData,
     toast,
     setIsCreateModalOpen,
     setSearchQuery,
   } = useApp();
+  const currentUser = useCurrentUser();
 
   const [draggedBugId, setDraggedBugId] = useState<string | null>(null);
 
@@ -58,7 +58,7 @@ export const KanbanView: React.FC = () => {
 
     try {
       const resolution = targetStatus === 'RESOLVED' || targetStatus === 'CLOSED' ? 'FIXED' : undefined;
-      await api.updateBug(bug.id, { status: targetStatus, resolution }, currentUser);
+      await api.updateBug(bug.id, { status: targetStatus, resolution });
       toast('Lifecycle Updated', `Moved #${bug.bugNumber} to ${targetStatus}`, 'success');
       await refreshData();
     } catch (err: any) {
@@ -90,7 +90,7 @@ export const KanbanView: React.FC = () => {
       <div className="px-5 py-3 border-b border-slate-800 bg-slate-900/60 backdrop-blur-xs flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-slate-200">Lifecycle Kanban Workflow</span>
-          <span className="text-[11px] text-slate-500 font-normal">
+          <span className="text-[11px] text-slate-400 font-normal">
             Drag cards between columns to advance Bugzilla states
           </span>
         </div>
@@ -142,8 +142,8 @@ export const KanbanView: React.FC = () => {
                 {colBugs.length === 0 ? (
                   <div className="h-28 border border-dashed border-slate-800/80 rounded-xl flex flex-col items-center justify-center p-3 text-center transition-colors">
                     <Sparkles className="w-4 h-4 text-slate-600 mb-1.5" />
-                    <span className="text-[11px] font-medium text-slate-500">No issues in {col.label.split('/')[0].trim()}</span>
-                    <span className="text-[10px] text-slate-600 font-normal mt-0.5">Drop issues here</span>
+                    <span className="text-[11px] font-medium text-slate-400">No issues in {col.label.split('/')[0].trim()}</span>
+                    <span className="text-[10px] text-slate-400 font-normal mt-0.5">Drop issues here</span>
                   </div>
                 ) : (
                   colBugs.map(bug => {
@@ -215,7 +215,7 @@ export const KanbanView: React.FC = () => {
                         )}
 
                         {/* Footer: Assignee & Indicators */}
-                        <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                        <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-mono">
                           <div className="flex items-center gap-1.5">
                             <div className="w-4 h-4 rounded-full bg-slate-700 flex items-center justify-center text-[9px] font-bold text-slate-300">
                               {bug.assigneeName[0]}

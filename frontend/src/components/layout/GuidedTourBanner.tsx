@@ -31,7 +31,7 @@ interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     id: 'step-ast',
-    badge: 'Step 1 of 5 • AI AST Parser',
+    badge: 'Step 1 of 5 • Traceback parser',
     title: 'Multi-Language Crash Stack Trace Auto-Triage & Test Synthesizer',
     description:
       'OmniBug parses Python, V8/JS, Go, Rust, and C/C++ ASAN tracebacks, isolates culprit files/lines, auto-routes components, and synthesizes Jest reproduction tests.',
@@ -112,7 +112,7 @@ export const GuidedTourBanner: React.FC = () => {
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
               {currentStep.badge}
             </span>
-            <span className="text-slate-500">•</span>
+            <span className="text-slate-400">•</span>
             <span className="font-bold text-slate-100 truncate font-sans text-xs">
               {currentStep.title}
             </span>
@@ -133,7 +133,7 @@ export const GuidedTourBanner: React.FC = () => {
               setSelectedBugId,
             })
           }
-          className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md font-mono text-[11px] font-bold shadow-xs transition-all duration-150 active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-md font-mono text-[11px] font-bold shadow-xs transition-all duration-150 active:scale-95"
         >
           <Play className="w-3 h-3 fill-white" />
           <span>{currentStep.actionLabel}</span>

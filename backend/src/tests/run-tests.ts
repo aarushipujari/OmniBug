@@ -4,7 +4,8 @@ import { DependencyGraphService } from '../services/dependencyGraph.js';
 import { AITriageService } from '../services/aiTriage.js';
 import { BugzillaExportImportService } from '../services/bugzillaExportImport.js';
 import { SlashCommandService } from '../services/slashCommands.js';
-import { generateSessionToken, verifySessionToken } from '../middleware/auth.js';
+import { generateSessionToken, verifySessionToken, verifyPassword } from '../middleware/auth.js';
+import { DEMO_PASSWORD } from '../data/seedData.js';
 import { Bug } from '../types/index.js';
 
 let passed = 0;
@@ -190,17 +191,32 @@ IndexError: Buffer overflow in AST walker`;
   // Cryptographic HMAC Session Token Security Tests
   const signedToken = generateSessionToken(adminUser.id);
   assert(typeof signedToken === 'string' && signedToken.length > 20, 'Cryptographic HMAC session token generated');
-  const verifiedUserId = verifySessionToken(signedToken);
-  assert(verifiedUserId === adminUser.id, 'HMAC session token successfully verified and extracted identity');
-  const tamperedToken = signedToken + 'invalid_signature_tamper';
-  const rejectedTamper = verifySessionToken(tamperedToken);
-  assert(rejectedTamper === null, 'Tampered HMAC session token strictly rejected');
+  const verified = verifySessionToken(signedToken);
+  assert(verified.valid && verified.userId === adminUser.id, 'HMAC session token verified and identity extracted');
+  const tampered = verifySessionToken(signedToken + 'invalid_signature_tamper');
+  assert(!tampered.valid, 'Tampered HMAC session token strictly rejected');
+
+  // A token past its expiry must be refused even though its signature is valid.
+  const expiredToken = generateSessionToken(adminUser.id, -1000);
+  const expiredResult = verifySessionToken(expiredToken);
+  assert(!expiredResult.valid && expiredResult.reason === 'expired', 'Expired session token rejected despite a valid signature');
+
+  // Passwords must verify against the stored scrypt digest, and only that.
+  assert(verifyPassword(DEMO_PASSWORD, adminUser.passwordHash), 'Correct password verifies against the stored digest');
+  assert(!verifyPassword('wrong-password', adminUser.passwordHash), 'Incorrect password is rejected');
 
   // Optimistic Concurrency Locking Tests
   const bugBeforeConcurrency = store.getBugById('bug-1003')!;
   const initialVersion = bugBeforeConcurrency.lockVersion || 1;
   const bugAfterConcurrency = store.updateBug('bug-1003', { title: 'Updated SIMD Vectorization title' });
   assert(Boolean(bugAfterConcurrency && (bugAfterConcurrency.lockVersion || 1) > initialVersion), 'Optimistic concurrency lockVersion auto-increments on mutation');
+
+  // HTTP-level tests against the real Express app.
+  //
+  // Imported dynamically: `server.ts` decides at module-evaluation time whether
+  // to bind a port, and a static import would run before NODE_ENV is set here.
+  const { runApiTests } = await import('./api-tests.js');
+  await runApiTests(assert);
 
   // Test Summary
   console.log('\n========================================');

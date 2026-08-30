@@ -1,231 +1,315 @@
-import { Bug, Product, User, GraphData, DuplicateCandidate, TriagePrediction, BugFlag, FlagStatus } from '../types/index.js';
+import {
+  Bug,
+  Product,
+  User,
+  GraphData,
+  DuplicateCandidate,
+  TriagePrediction,
+  BugFlag,
+  FlagStatus,
+  AuditLogEntry,
+  Comment,
+  WorkLog,
+} from '../types/index.js';
 
 const API_BASE = '/api';
+const TOKEN_KEY = 'omnibug.session.token';
+
+/**
+ * Every request goes through `request()` so the session token, JSON headers and
+ * error handling exist in exactly one place.
+ *
+ * Previously each of the twenty-three call sites built its own `fetch`, and
+ * identity was asserted by the client — an `X-Demo-Persona-Id` header and a
+ * `_currentUser` object embedded in the request body. The server believed both,
+ * so any caller could act as, and be recorded in the audit log as, anyone.
+ * Identity now travels only as a bearer token the server issued.
+ */
+
+let inMemoryToken: string | null = null;
+
+function readStoredToken(): string | null {
+  if (inMemoryToken) return inMemoryToken;
+  try {
+    inMemoryToken = localStorage.getItem(TOKEN_KEY);
+  } catch {
+    // Storage can be unavailable (private mode, blocked cookies); the session
+    // still works for as long as the tab lives.
+    inMemoryToken = null;
+  }
+  return inMemoryToken;
+}
+
+export function setSessionToken(token: string | null) {
+  inMemoryToken = token;
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* non-fatal */
+  }
+}
+
+export function getSessionToken(): string | null {
+  return readStoredToken();
+}
+
+/** Raised when the server rejects the session, so the UI can return to sign-in. */
+export class UnauthenticatedError extends Error {
+  constructor(message = 'Your session has expired. Please sign in again.') {
+    super(message);
+    this.name = 'UnauthenticatedError';
+  }
+}
+
+type Json = Record<string, unknown>;
+
+async function request<T>(
+  path: string,
+  options: { method?: string; body?: unknown; raw?: boolean } = {}
+): Promise<T> {
+  const { method = 'GET', body, raw = false } = options;
+  const token = readStoredToken();
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: {
+      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+
+  if (res.status === 401) {
+    setSessionToken(null);
+    throw new UnauthenticatedError();
+  }
+
+  if (raw) {
+    if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+    return (await res.text()) as unknown as T;
+  }
+
+  const json = (await res.json().catch(() => ({}))) as Json;
+  if (!res.ok) {
+    throw new Error((json.error as string) || `Request failed with status ${res.status}`);
+  }
+  return json as T;
+}
+
+export interface DemoAccount {
+  email: string;
+  name: string;
+  role: User['role'];
+}
+
+/** Result of really executing the synthesized reproduction test on the server. */
+export interface SandboxRunResult {
+  passed: boolean;
+  suiteName: string;
+  assertions: Array<{ name: string; passed: boolean; durationMs: number; failureMessage?: string }>;
+  totalDurationMs: number;
+  error?: string;
+  output: string;
+}
+
+export interface Capabilities {
+  canResetStore: boolean;
+  canImportXml: boolean;
+  canVerifyBugs: boolean;
+  canManageSecurity: boolean;
+  canTriage: boolean;
+}
 
 export const api = {
-  // Users & Store
+  /* ---- Authentication -------------------------------------------------- */
+
+  async login(email: string, password: string): Promise<{ token: string; user: User; capabilities: Capabilities }> {
+    const json = await request<{ token: string; user: User; capabilities: Capabilities }>('/auth/login', {
+      method: 'POST',
+      body: { email, password },
+    });
+    setSessionToken(json.token);
+    return json;
+  },
+
+  logout() {
+    setSessionToken(null);
+  },
+
+  async getDemoAccounts(): Promise<{ password: string; accounts: DemoAccount[] }> {
+    return request('/auth/demo-accounts');
+  },
+
+  async getMe(): Promise<{ data: User; capabilities: Capabilities }> {
+    return request('/auth/me');
+  },
+
+  /* ---- Users & store --------------------------------------------------- */
+
   async getUsers(): Promise<User[]> {
-    const res = await fetch(`${API_BASE}/users`);
-    const json = await res.json();
+    const json = await request<{ data: User[] }>('/users');
     return json.data;
   },
 
   async resetStore(): Promise<void> {
-    await fetch(`${API_BASE}/store/reset`, { method: 'POST' });
+    await request('/store/reset', { method: 'POST' });
   },
 
-  // Products
+  /* ---- Products -------------------------------------------------------- */
+
   async getProducts(): Promise<Product[]> {
-    const res = await fetch(`${API_BASE}/products`);
-    const json = await res.json();
+    const json = await request<{ data: Product[] }>('/products');
     return json.data;
   },
 
   async createProduct(data: Partial<Product>): Promise<Product> {
-    const res = await fetch(`${API_BASE}/products`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
+    const json = await request<{ data: Product }>('/products', { method: 'POST', body: data });
     return json.data;
   },
 
-  // Bugs
+  /* ---- Bugs ------------------------------------------------------------ */
+
   async getBugs(params: Record<string, string> = {}): Promise<{ total: number; data: Bug[] }> {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_BASE}/bugs${query ? `?${query}` : ''}`);
-    return await res.json();
+    return request(`/bugs${query ? `?${query}` : ''}`);
   },
 
-  async getBugById(id: string): Promise<{ data: Bug; auditLogs: any[]; graph: GraphData }> {
-    const res = await fetch(`${API_BASE}/bugs/${id}`);
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to fetch bug');
-    }
-    return await res.json();
+  async getBugById(id: string): Promise<{ data: Bug; auditLogs: AuditLogEntry[]; graph: GraphData }> {
+    return request(`/bugs/${id}`);
   },
 
-  async createBug(bugData: any, currentUser: User): Promise<Bug> {
-    const res = await fetch(`${API_BASE}/bugs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...bugData, _currentUser: currentUser }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to create bug');
+  async createBug(bugData: Partial<Bug>): Promise<Bug> {
+    const json = await request<{ data: Bug }>('/bugs', { method: 'POST', body: bugData });
     return json.data;
   },
 
-  async updateBug(id: string, updates: Partial<Bug>, currentUser: User): Promise<Bug> {
-    const res = await fetch(`${API_BASE}/bugs/${id}`, {
+  /**
+   * `lockVersion` is sent so the server can reject a write made against a stale
+   * copy. Without it the optimistic-concurrency check on the server never ran,
+   * and simultaneous edits silently resolved to last-write-wins.
+   */
+  async updateBug(id: string, updates: Partial<Bug>, lockVersion?: number): Promise<Bug> {
+    const json = await request<{ data: Bug }>(`/bugs/${id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Demo-Persona-Id': currentUser.id,
-      },
-      body: JSON.stringify({ ...updates, _currentUser: currentUser }),
+      body: lockVersion === undefined ? updates : { ...updates, lockVersion },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to update bug');
     return json.data;
   },
 
-  // Explicit Domain Commands
-  async transitionBug(id: string, status: string, resolution?: string | null, duplicateOfBugId?: string, currentUser?: User): Promise<Bug> {
-    const res = await fetch(`${API_BASE}/bugs/${id}/transition`, {
+  async transitionBug(
+    id: string,
+    status: string,
+    resolution?: string | null,
+    duplicateOfBugId?: string
+  ): Promise<Bug> {
+    const json = await request<{ data: Bug }>(`/bugs/${id}/transition`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(currentUser ? { 'X-Demo-Persona-Id': currentUser.id } : {}),
-      },
-      body: JSON.stringify({ status, resolution, duplicateOfBugId, _currentUser: currentUser }),
+      body: { status, resolution, duplicateOfBugId },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to transition bug');
     return json.data;
   },
 
-  async assignBug(id: string, assigneeId: string, currentUser?: User): Promise<Bug> {
-    const res = await fetch(`${API_BASE}/bugs/${id}/assign`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(currentUser ? { 'X-Demo-Persona-Id': currentUser.id } : {}),
-      },
-      body: JSON.stringify({ assigneeId, _currentUser: currentUser }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to assign bug');
+  async assignBug(id: string, assigneeId: string): Promise<Bug> {
+    const json = await request<{ data: Bug }>(`/bugs/${id}/assign`, { method: 'POST', body: { assigneeId } });
     return json.data;
   },
 
-  async setSecurity(id: string, isSecuritySensitive: boolean, currentUser?: User): Promise<Bug> {
-    const res = await fetch(`${API_BASE}/bugs/${id}/set-security`, {
+  async setSecurity(id: string, isSecuritySensitive: boolean): Promise<Bug> {
+    const json = await request<{ data: Bug }>(`/bugs/${id}/set-security`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(currentUser ? { 'X-Demo-Persona-Id': currentUser.id } : {}),
-      },
-      body: JSON.stringify({ isSecuritySensitive, _currentUser: currentUser }),
+      body: { isSecuritySensitive },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to set security sensitivity');
     return json.data;
   },
 
-  async getAuthToken(userId: string): Promise<{ token: string; user: User }> {
-    const res = await fetch(`${API_BASE}/auth/token`, {
+  async bulkUpdate(bugIds: string[], updates: Partial<Bug>): Promise<number> {
+    const json = await request<{ updatedCount: number }>('/bugs/bulk', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
+      body: { bugIds, updates },
     });
-    return await res.json();
-  },
-
-  async bulkUpdate(bugIds: string[], updates: Partial<Bug>, currentUser: User): Promise<number> {
-    const res = await fetch(`${API_BASE}/bugs/bulk`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bugIds, updates, _currentUser: currentUser }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed bulk update');
     return json.updatedCount;
   },
 
-  async addComment(bugId: string, text: string, currentUser: User, isInternal = false): Promise<any> {
-    const res = await fetch(`${API_BASE}/bugs/${bugId}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, isInternal, _currentUser: currentUser }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to add comment');
-    return json;
+  async addComment(
+    bugId: string,
+    text: string,
+    isInternal = false
+  ): Promise<{ data: Comment; executedCommands?: Array<{ description: string }> }> {
+    return request(`/bugs/${bugId}/comments`, { method: 'POST', body: { text, isInternal } });
   },
 
-  async addWorkLog(bugId: string, hoursSpent: number, comment: string, currentUser: User, newRemainingHours?: number): Promise<any> {
-    const res = await fetch(`${API_BASE}/bugs/${bugId}/worklogs`, {
+  async addWorkLog(
+    bugId: string,
+    hoursSpent: number,
+    comment: string,
+    newRemainingHours?: number
+  ): Promise<{ data: WorkLog; bug: Bug }> {
+    return request(`/bugs/${bugId}/worklogs`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hoursSpent, comment, newRemainingHours, _currentUser: currentUser }),
+      body: { hoursSpent, comment, newRemainingHours },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to add worklog');
-    return json;
   },
 
-  async toggleVote(bugId: string, currentUser: User): Promise<{ votes: number; hasVoted: boolean }> {
-    const res = await fetch(`${API_BASE}/bugs/${bugId}/vote`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ _currentUser: currentUser }),
-    });
-    return await res.json();
+  async toggleVote(bugId: string): Promise<{ votes: number; hasVoted: boolean }> {
+    return request(`/bugs/${bugId}/vote`, { method: 'POST', body: {} });
   },
 
-  // Flags
-  async setFlag(bugId: string, name: BugFlag['name'], status: FlagStatus, requesteeId?: string, currentUser?: User): Promise<any> {
-    const res = await fetch(`${API_BASE}/bugs/${bugId}/flags`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, status, requesteeId, _currentUser: currentUser }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to set flag');
-    return json;
+  /* ---- Flags ----------------------------------------------------------- */
+
+  async setFlag(
+    bugId: string,
+    name: BugFlag['name'],
+    status: FlagStatus,
+    requesteeId?: string
+  ): Promise<{ data: BugFlag; flags: BugFlag[] }> {
+    return request(`/bugs/${bugId}/flags`, { method: 'POST', body: { name, status, requesteeId } });
   },
 
-  // Graph
+  /* ---- Graph & analytics ------------------------------------------------ */
+
   async getGraph(rootId?: string): Promise<GraphData> {
-    const query = rootId ? `?rootId=${rootId}` : '';
-    const res = await fetch(`${API_BASE}/graph${query}`);
-    const json = await res.json();
+    const json = await request<{ data: GraphData }>(`/graph${rootId ? `?rootId=${rootId}` : ''}`);
     return json.data;
   },
 
-  // Analytics
-  async getAnalytics(): Promise<any> {
-    const res = await fetch(`${API_BASE}/analytics`);
-    return await res.json();
+  async getAnalytics(): Promise<Record<string, unknown>> {
+    return request('/analytics');
   },
 
-  // AI
+  /* ---- Triage ----------------------------------------------------------- */
+
   async findDuplicates(title: string, description: string): Promise<DuplicateCandidate[]> {
-    const res = await fetch(`${API_BASE}/ai/duplicates`, {
+    const json = await request<{ candidates?: DuplicateCandidate[] }>('/ai/duplicates', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description }),
+      body: { title, description },
     });
-    const json = await res.json();
     return json.candidates || [];
   },
 
   async analyzeAndTriage(title: string, description: string, productId?: string): Promise<TriagePrediction> {
-    const res = await fetch(`${API_BASE}/ai/triage`, {
+    const json = await request<{ prediction: TriagePrediction }>('/ai/triage', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description, productId }),
+      body: { title, description, productId },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Triage analysis failed');
     return json.prediction;
   },
 
-  // Export / Import
-  async exportBugzillaXml(): Promise<string> {
-    const res = await fetch(`${API_BASE}/export/bugzilla-xml`);
-    return await res.text();
+  async runReproductionTest(
+    title: string,
+    description: string,
+    productId?: string
+  ): Promise<{ result: SandboxRunResult; source: string }> {
+    return request('/ai/run-test', { method: 'POST', body: { title, description, productId } });
   },
 
-  async importBugzillaXml(xmlContent: string): Promise<any> {
-    const res = await fetch(`${API_BASE}/import/bugzilla-xml`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ xmlContent }),
-    });
-    return await res.json();
+  /* ---- Bugzilla interchange --------------------------------------------- */
+
+  async exportBugzillaXml(): Promise<string> {
+    return request('/export/bugzilla-xml', { raw: true });
+  },
+
+  async importBugzillaXml(xmlContent: string): Promise<{ importedCount: number; data?: Bug[] }> {
+    return request('/import/bugzilla-xml', { method: 'POST', body: { xmlContent } });
   },
 };

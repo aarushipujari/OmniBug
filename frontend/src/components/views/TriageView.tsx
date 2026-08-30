@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useApp } from '../../context/AppContext.js';
+import { useApp, useCurrentUser } from '../../context/AppContext.js';
 import { DuplicateCandidate, TriagePrediction } from '../../types/index.js';
 import { api } from '../../services/api.js';
 import {
@@ -22,7 +22,8 @@ import { StatusBadge } from '../common/StatusBadge.js';
 import { EmptyState } from '../common/EmptyState.js';
 
 export const TriageView: React.FC = () => {
-  const { allBugs, currentUser, refreshData, toast, setSelectedBugId, setIsCreateModalOpen } = useApp();
+  const { allBugs, refreshData, toast, setSelectedBugId, setIsCreateModalOpen } = useApp();
+  const currentUser = useCurrentUser();
   
   // Speed triage queue: Unconfirmed bugs OR bugs with pending needinfo? flag
   const triageBugs = allBugs.filter(
@@ -66,7 +67,7 @@ export const TriageView: React.FC = () => {
     }
     setIsUpdatingStatus(true);
     try {
-      await api.updateBug(activeBug.id, { status: 'NEW' }, currentUser);
+      await api.updateBug(activeBug.id, { status: 'NEW' });
       toast('Bug Confirmed', `Marked #${activeBug.bugNumber} as CONFIRMED (NEW)`, 'success');
       await refreshData();
     } catch (err: any) {
@@ -86,8 +87,7 @@ export const TriageView: React.FC = () => {
     try {
       await api.updateBug(
         activeBug.id,
-        { status: 'IN_PROGRESS', assigneeId: currentUser.id, assigneeName: currentUser.name },
-        currentUser
+        { status: 'IN_PROGRESS', assigneeId: currentUser.id, assigneeName: currentUser.name }
       );
       toast('Under Investigation', `Assigned #${activeBug.bugNumber} to you in IN_PROGRESS`, 'success');
       await refreshData();
@@ -102,7 +102,7 @@ export const TriageView: React.FC = () => {
     if (!activeBug || isUpdatingStatus) return;
     setIsUpdatingStatus(true);
     try {
-      await api.updateBug(activeBug.id, { status: 'RESOLVED', resolution: 'FIXED' }, currentUser);
+      await api.updateBug(activeBug.id, { status: 'RESOLVED', resolution: 'FIXED' });
       toast('Resolved Fixed', `Resolved #${activeBug.bugNumber} as FIXED`, 'success');
       await refreshData();
     } catch (err: any) {
@@ -115,7 +115,7 @@ export const TriageView: React.FC = () => {
   const handleSetPriority = async (pri: 'P1' | 'P2' | 'P3' | 'P4' | 'P5') => {
     if (!activeBug) return;
     try {
-      await api.updateBug(activeBug.id, { priority: pri }, currentUser);
+      await api.updateBug(activeBug.id, { priority: pri });
       toast('Priority Updated', `Set #${activeBug.bugNumber} to ${pri}`, 'success');
       await refreshData();
     } catch (err: any) {
@@ -182,7 +182,7 @@ export const TriageView: React.FC = () => {
         updates.componentName = aiPrediction.suggestedComponentName;
       }
 
-      await api.updateBug(activeBug.id, updates, currentUser);
+      await api.updateBug(activeBug.id, updates);
       setAppliedAiForBugId(activeBug.id);
       toast(
         'AI Classification Applied',
@@ -206,8 +206,7 @@ export const TriageView: React.FC = () => {
           status: 'RESOLVED',
           resolution: 'DUPLICATE',
           duplicateOfBugId: targetBugId,
-        },
-        currentUser
+        }
       );
       toast('Marked Duplicate', `Resolved #${activeBug.bugNumber} as duplicate of #${targetBugNum}`, 'success');
       await refreshData();
@@ -219,7 +218,7 @@ export const TriageView: React.FC = () => {
   const handleRequestNeedInfo = async () => {
     if (!activeBug) return;
     try {
-      await api.setFlag(activeBug.id, 'needinfo', '?', activeBug.reporterId, currentUser);
+      await api.setFlag(activeBug.id, 'needinfo', '?', activeBug.reporterId);
       toast('NeedInfo Requested', `Sent needinfo? request to ${activeBug.reporterName}`, 'success');
       await refreshData();
     } catch (err: any) {
@@ -227,26 +226,43 @@ export const TriageView: React.FC = () => {
     }
   };
 
-  const handleRunSandboxTest = () => {
-    if (!activeBug || !aiPrediction?.suggestedTestCase) return;
+  /*
+   * Really runs the test.
+   *
+   * This was a 450ms `setTimeout` that printed a fixed block of Jest output —
+   * "2 passed", "Time: 0.015 s" — whether or not anything had been analyzed,
+   * and for a test that referenced a helper which does not exist. The server
+   * now synthesizes the test, executes it in an isolated VM context, and
+   * returns the real assertions and the real timings, pass or fail.
+   */
+  const handleRunSandboxTest = async () => {
+    if (!activeBug) return;
     setIsTestingSandbox(true);
     setSandboxResult(null);
-    setTimeout(() => {
-      setIsTestingSandbox(false);
-      const culprit = aiPrediction.parsedStackTrace?.culpritFile || 'src/services/apiGateway.ts';
-      setSandboxResult(
-        `✓ PASS  tests/reproduction/${culprit.split('/').pop() || 'test'}.spec.ts (15ms)\n` +
-        `  ● Bug Reproduction Test (${activeBug.title.slice(0, 32)}...)\n` +
-        `    ✓ isolates boundary condition on culprit module (8ms)\n` +
-        `    ✓ verifies defensive assertions prevent unhandled state faults (4ms)\n\n` +
-        `Test Suites: 1 passed, 1 total\n` +
-        `Tests:       2 passed, 2 total\n` +
-        `Snapshots:   0 total\n` +
-        `Time:        0.015 s\n` +
-        `Ran all test suites with sandboxed memory bounds validation.`
+    try {
+      const { result } = await api.runReproductionTest(
+        activeBug.title,
+        activeBug.description,
+        activeBug.productId
       );
-      toast('Sandbox Test Executed', 'Reproduction test verified successfully under local fixture', 'success');
-    }, 450);
+      setSandboxResult(result.output);
+      if (result.passed) {
+        toast(
+          'Reproduction test passed',
+          `${result.assertions.length} assertions in ${result.totalDurationMs.toFixed(2)}ms`,
+          'success'
+        );
+      } else {
+        const failed = result.assertions.filter(a => !a.passed).length;
+        toast('Reproduction test failed', result.error || `${failed} assertion(s) failed`, 'alert');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not run the test.';
+      setSandboxResult(`✗ ${message}`);
+      toast('Sandbox unavailable', message, 'alert');
+    } finally {
+      setIsTestingSandbox(false);
+    }
   };
 
   const isAiApplied = appliedAiForBugId === activeBug?.id;
@@ -307,7 +323,7 @@ export const TriageView: React.FC = () => {
         </div>
 
         {/* Keyboard shortcut bar */}
-        <div className="p-2.5 border-t border-slate-800/80 bg-slate-950/80 text-[10px] text-slate-500 font-mono flex items-center justify-between">
+        <div className="p-2.5 border-t border-slate-800/80 bg-slate-950/80 text-[10px] text-slate-400 font-mono flex items-center justify-between">
           <span><kbd className="bg-slate-850 px-1 py-0.5 rounded border border-slate-700 text-slate-300">J/K</kbd> Nav</span>
           <span><kbd className="bg-slate-850 px-1 py-0.5 rounded border border-slate-700 text-slate-300">C</kbd> Confirm</span>
           <span><kbd className="bg-slate-850 px-1 py-0.5 rounded border border-slate-700 text-slate-300">I</kbd> Investigate</span>
@@ -338,7 +354,7 @@ export const TriageView: React.FC = () => {
                 <button
                   onClick={handleConfirmBug}
                   disabled={isUpdatingStatus}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98]"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98]"
                   title="Confirm reproduction and move to NEW (C)"
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
@@ -423,7 +439,7 @@ export const TriageView: React.FC = () => {
                 </div>
 
                 {duplicateCandidates.length === 0 ? (
-                  <div className="text-xs text-slate-500 py-3 font-normal">
+                  <div className="text-xs text-slate-400 py-3 font-normal">
                     No duplicate candidate matches found (Similarity &lt; 18%).
                   </div>
                 ) : (
@@ -468,8 +484,8 @@ export const TriageView: React.FC = () => {
                     <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
                       <Sparkles className="w-4 h-4 text-emerald-400" />
                       <span>Deterministic Smart Triage & Subsystem Routing</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" title="Deterministic AST traceback analysis (100% offline, zero cloud API cost)">
-                        AST Heuristic • 100% Offline
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" title="Deterministic pattern-based traceback analysis — runs entirely offline, no model or cloud API involved">
+                        Deterministic • Offline
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -478,8 +494,8 @@ export const TriageView: React.FC = () => {
                         disabled={isApplyingAi}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all duration-150 active:scale-[0.98] ${
                           isAiApplied
-                            ? 'bg-emerald-600 text-white font-bold'
-                            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                            ? 'bg-emerald-500 text-slate-950 font-bold'
+                            : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
                         }`}
                       >
                         {isAiApplied ? <Check className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
@@ -499,7 +515,7 @@ export const TriageView: React.FC = () => {
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs font-mono">
                     <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 text-[10px] block uppercase font-medium">Severity & Reason</span>
+                      <span className="text-slate-400 text-[10px] block uppercase font-medium">Severity & Reason</span>
                       <span className="font-bold text-emerald-400 capitalize block">
                         {aiPrediction.suggestedSeverity} ({aiPrediction.suggestedPriority})
                       </span>
@@ -508,7 +524,7 @@ export const TriageView: React.FC = () => {
                       </span>
                     </div>
                     <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 text-[10px] block uppercase font-medium">Subsystem Routing</span>
+                      <span className="text-slate-400 text-[10px] block uppercase font-medium">Subsystem Routing</span>
                       <span className="font-bold text-slate-200 truncate block">
                         {aiPrediction.suggestedComponentName || activeBug.componentName}
                       </span>
@@ -517,7 +533,7 @@ export const TriageView: React.FC = () => {
                       </span>
                     </div>
                     <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 col-span-2 md:col-span-1">
-                      <span className="text-slate-500 text-[10px] block uppercase font-medium">Security Policy</span>
+                      <span className="text-slate-400 text-[10px] block uppercase font-medium">Security Policy</span>
                       <span className={aiPrediction.isSecuritySensitive ? 'text-purple-300 font-bold block' : 'text-slate-400 block'}>
                         {aiPrediction.isSecuritySensitive ? '⚠️ Security Sensitive' : 'Standard Defect'}
                       </span>
@@ -572,7 +588,7 @@ export const TriageView: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleRunSandboxTest}
-                        disabled={isTestingSandbox}
+                        disabled={isTestingSandbox || !activeBug}
                         className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600/30 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 rounded text-[11px] font-mono font-bold transition-all duration-150 active:scale-95 shadow-xs"
                       >
                         <Play className="w-3 h-3 fill-emerald-400" />
@@ -587,7 +603,7 @@ export const TriageView: React.FC = () => {
                       <div className="p-3 bg-slate-950 rounded-lg border border-emerald-500/40 space-y-1.5 animate-in fade-in duration-150 shadow-inner">
                         <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-400">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Sandbox Test Execution Output:</span>
+                          <span>Sandbox execution output</span>
                         </div>
                         <pre className="text-[10.5px] font-mono text-emerald-300/95 leading-relaxed whitespace-pre-wrap bg-slate-900/90 p-2.5 rounded border border-slate-800">
                           {sandboxResult}

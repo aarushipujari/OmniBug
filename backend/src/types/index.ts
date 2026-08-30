@@ -48,6 +48,19 @@ export interface User {
   name: string;
   role: 'admin' | 'maintainer' | 'developer' | 'qa' | 'reporter';
   avatarUrl?: string;
+  /**
+   * scrypt digest, never serialised to a client. Every response that carries a
+   * user goes through `publicUser()` in `types/index.ts` first.
+   */
+  passwordHash?: string;
+}
+
+/** A user stripped of its credential, safe to send to a client. */
+export type PublicUser = Omit<User, 'passwordHash'>;
+
+export function publicUser(user: User): PublicUser {
+  const { passwordHash: _omitted, ...rest } = user;
+  return rest;
 }
 
 export interface ProductComponent {
